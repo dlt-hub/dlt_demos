@@ -5,7 +5,7 @@ using the [dlt](https://github.com/dlt-hub/dlt) library.
 
 ## Repository Contents
 
-- [demo_weaviate.ipynb](https://github.com/dlt-hub/weaviate_demo/blob/main/demo_weaviate.ipynb): shows how to load data from PDF files, specifically invoices, into Weaviate.
+- [pdf_to_weaviate.ipynb](https://github.com/dlt-hub/weaviate_demo/blob/main/pdf_to_weaviate.ipynb): shows how to load data from PDF files, specifically invoices, into Weaviate.
 - [sql_to_weaviate.ipynb](https://github.com/dlt-hub/weaviate_demo/blob/main/sql_to_weaviate.ipynb): shows how to import data from a public MySQL database into Weaviate.
 
 ## Prerequisites
