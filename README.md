@@ -17,8 +17,7 @@ To run these notebooks, you will need credentials of a Weaviate instance.
 
 ### Common demos
 
-- [spotlight_demo.ipynb](spotlight_demo.ipynb): shows how to get data from APIs, files, Python objects or pandas 
-  dataframes and move it into a local or remote database, data lake or a vector data store.
+- [spotlight_demo.ipynb](spotlight_demo.ipynb): shows how to get data from APIs, files, Python objects and move it into a local or remote database.
   Demo was created for a [Data Talks Club: Open-Source Spotlight](https://youtube.com/playlist?list=PL3MmuxUbc_hJ5t5nnjzC0F2zan76Dpsz0&feature=shared) project.
 
 
