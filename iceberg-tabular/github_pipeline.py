@@ -1,3 +1,4 @@
+import click
 import dlt
 from dlt.sources.helpers import requests
 
@@ -16,7 +17,8 @@ def get_issues(
         "updated_at", initial_value="1970-01-01T00:00:00Z"
     ),
 ):
-    # NOTE: we read only open issues to minimize number of calls to the API. There's a limit of ~50 calls for not authenticated Github users
+    # NOTE: we read only open issues to minimize the number of calls to the API.
+    # There's a limit of ~50 calls for not authenticated Github users
     url = f"{BASE_URL}/{organisation_name}/{repo_name}/issues"
 
     while True:
@@ -39,16 +41,25 @@ def get_issues(
         url = response.links["next"]["url"]
 
 
-if __name__ == "__main__":
+@click.command()
+@click.option("--organisation-name", required=True, help="GitHub organisation name.")
+@click.option("--repo-name", required=True, help="GitHub repository name.")
+@click.option("--pipeline-name", default="github_pipeline", help="Name of the DLT pipeline.")
+@click.option("--dataset-name", default="issues", help="Name of the dataset.")
+def github_pipeline(organisation_name, repo_name, pipeline_name, dataset_name):
     pipeline = dlt.pipeline(
-        pipeline_name="github_issues_pipeline",
+        pipeline_name=pipeline_name,
         destination="athena",
-        dataset_name="github_issues_data",
+        dataset_name=dataset_name,
     )
-    source_data = get_issues(organisation_name="dlt-hub", repo_name="dlt")
+    source_data = get_issues(organisation_name=organisation_name, repo_name=repo_name)
     load_info = pipeline.run(source_data)
     row_counts = pipeline.last_trace.last_normalize_info
 
     print(row_counts)
     print("------")
     print(load_info)
+
+
+if __name__ == "__main__":
+    github_pipeline()
