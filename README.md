@@ -17,6 +17,8 @@ To run these notebooks, you will need credentials of a Weaviate instance.
 
 ### Common demos
 
+- [schema_evolution.ipynb](schema_evolution.ipynb): shows how you can alert schema changes to slack
+
 - [spotlight_demo.ipynb](spotlight_demo.ipynb): shows how to get data from APIs, files, Python objects and move it into a local or remote database.
   Demo was created for a [Data Talks Club: Open-Source Spotlight](https://youtube.com/playlist?list=PL3MmuxUbc_hJ5t5nnjzC0F2zan76Dpsz0&feature=shared) project.
 
