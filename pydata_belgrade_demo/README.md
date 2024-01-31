@@ -68,19 +68,15 @@ You can also use [DuckDB as destination](https://dlthub.com/docs/getting-started
 
 ## Your dlt pipeline
 
-1. Run your pipeline.
-
-    ```bash
-    $ python3 dlt_pipeline_merged.py
-    ```
-
-2. Understand your resources and sources.
+1. Understand your resources and sources.
 
     > Explanation to be added by Anuun.
 
-3. Understand your pipeline. 
+2. Understand your pipeline.
 
     > Explanation to be added by Anuun.
+
+3. Run your pipeline. 
 
 ## View your data in DBeaver
 
@@ -95,4 +91,4 @@ You can also use [DuckDB as destination](https://dlthub.com/docs/getting-started
 
 2. View your data. It should look like this. 
 
-    ![DBeaver view of demo_data](https://storage.googleapis.com/dlt-blog-images/belgrade_demo_DBeaver_view.png)
+    ![DBeaver view of demo_data](https://storage.googleapis.com/dlt-blog-images/belgrade_demo_DBeaver.png)
