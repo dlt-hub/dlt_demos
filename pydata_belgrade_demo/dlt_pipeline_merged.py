@@ -10,7 +10,7 @@ def coin_list():
 
 
 # Resource 2 - Transformer: Extracts detailed information for each coin
-@dlt.transformer(data_from = coin_list().add_limit(2)) 
+@dlt.transformer(data_from = coin_list().add_limit(10)) # The limit is added to avoid exceeding the API's request quota
 def coin_information(coin):
     coin_id = coin['id']
     # Fetching detailed information including the list of team members, tags, and links for each coin
