@@ -14,6 +14,8 @@ This demo project demonstrates how to load nested data from separate API endpoin
 2. DBeaver or a different database administration tool of your choice.
 
     > [Download](https://dbeaver.io/download/) DBeaver.
+
+You can also use [DuckDB as destination](https://dlthub.com/docs/getting-started) for easier setup.
     
 ## Setup Guide
 
@@ -51,7 +53,7 @@ This demo project demonstrates how to load nested data from separate API endpoin
     CREATE DATABASE demo_data;
     ```
 
-7. Enter your credentials into `.dlt/secrets.toml`. 
+7. Create an empty `secrets.toml` in `.dlt` and enter your credentials. 
 
     ```env
     [destination.postgres.credentials]
@@ -93,4 +95,4 @@ This demo project demonstrates how to load nested data from separate API endpoin
 
 2. View your data. It should look like this. 
 
-    - An image to be added by Anuun.
+    ![DBeaver view of demo_data](https://storage.googleapis.com/dlt-blog-images/belgrade_demo_DBeaver_view.png)
