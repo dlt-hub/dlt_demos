@@ -1,0 +1,13 @@
+[
+    {
+    "id": "binance",
+    "name": "Binance",
+    "fiats": [
+    {
+    "name": "US Dollars",
+    "symbol": "USD"
+    }
+    ],
+    "adjusted_volume_24h_share": 11.26
+    }
+]

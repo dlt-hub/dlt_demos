@@ -1,0 +1,11 @@
+[
+    {
+      "id": "btc-bitcoin",
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "rank": 1,
+      "is_new": false,
+      "is_active": true,
+      "type": "coin"
+    }
+]
