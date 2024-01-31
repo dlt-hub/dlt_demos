@@ -4,7 +4,7 @@
 
 This demo project demonstrates how to load nested data from separate API endpoints, where multiple endpoints rely on the response of one endpoint. It demonstrates how to set up `dlt` (Data Loading Tool) resources, including transformer resources and a source that merges them into a single dataset. Additionally, it includes a pipeline that handles the data ingestion process. PostgreSQL is used as the storage destination, and data is sourced from the Coinpaprika API.
 
-![Pipeline overview](https://storage.googleapis.com/dlt-blog-images/belgrade_demo_overview.png)
+![Pipeline overview](https://storage.googleapis.com/dlt-blog-images/belgrade_demo_overview.jpg)
 
 
 ## Prerequisites
