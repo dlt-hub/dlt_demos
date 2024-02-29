@@ -1,0 +1,11 @@
+dlt[duckdb]>=0.3.5
+dagster
+snowflake-connector-python[pandas]
+dagster-snowflake-pandas
+dagster-snowflake
+pandas
+matplotlib
+pytrends
+openai
+dagster-webserver
+toml
