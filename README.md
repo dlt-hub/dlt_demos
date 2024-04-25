@@ -1,6 +1,6 @@
 # Data Loading Demos
 
-This repository contains Jupyter notebooks that illustrate various methods for loading data into different destinations (e.g. Weaviate database)
+This repository contains Jupyter notebooks and projects that illustrate various methods for loading data into different destinations (e.g. Weaviate database)
 using the [dlt](https://github.com/dlt-hub/dlt) library.
 
 ## Repository Contents
@@ -22,6 +22,9 @@ To run these notebooks, you will need credentials of a Weaviate instance.
 - [spotlight_demo.ipynb](spotlight_demo.ipynb): shows how to get data from APIs, files, Python objects and move it into a local or remote database.
   Demo was created for a [Data Talks Club: Open-Source Spotlight](https://youtube.com/playlist?list=PL3MmuxUbc_hJ5t5nnjzC0F2zan76Dpsz0&feature=shared) project.
 
+### Project demos
+
+Refer to the README file in each project repository.
 
 ## License
 
