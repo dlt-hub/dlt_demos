@@ -1,0 +1,10 @@
+# put your configuration values here
+
+[runtime]
+log_level="WARNING"  # the system log level of dlt
+# use the dlthub_telemetry setting to enable/disable anonymous usage data reporting, see https://dlthub.com/docs/telemetry
+dlthub_telemetry = true
+
+[sources.scraping]
+start_urls = ["https://quotes.toscrape.com/"]
+start_urls_file = "start_urls_file"
