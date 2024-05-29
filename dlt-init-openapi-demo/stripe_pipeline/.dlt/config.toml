@@ -1,0 +1,7 @@
+[runtime]
+log_level="INFO"
+
+[sources.stripe]
+# Base URL for the API
+base_url = "https://api.stripe.com/"
+
