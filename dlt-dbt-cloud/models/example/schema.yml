@@ -1,0 +1,9 @@
+
+version: 2
+
+models:
+  - name: my_first_dbt_model
+    description: "A starter dbt model"
+
+  - name: my_second_dbt_model
+    description: "the second dbt model"
