@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: pokemon_data
+    database: dlt-dev-external
+    schema: pokemon_data
+    tables:
+      - name: pokemon
+      - name: berries
