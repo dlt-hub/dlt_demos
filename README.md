@@ -14,7 +14,7 @@ To run the notebooks, you will need credentials for the tools being used. They a
 - [schema_evolution.ipynb](schema_evolution.ipynb): shows how you can alert schema changes to slack.
 - [spotlight_demo.ipynb](spotlight_demo.ipynb): shows how to get data from APIs, files, Python objects and move it into a local or remote database.
   Demo was created for a [Data Talks Club: Open-Source Spotlight](https://youtube.com/playlist?list=PL3MmuxUbc_hJ5t5nnjzC0F2zan76Dpsz0&feature=shared) project.
-
+- [Pyladies 12.11.2024](pyladies-2024-demo): Similar to Spotlight demo, shows dlt basics, demonstrates hot to get data from APIs (GitHub and PokeAPI), database, JSON, and move it into a Duckdb. 
 
 ### Weaviate demos
 
