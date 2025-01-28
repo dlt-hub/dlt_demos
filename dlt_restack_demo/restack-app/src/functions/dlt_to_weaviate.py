@@ -35,7 +35,7 @@ async def anime_pipeline(input: PipelineInput) -> str:
         pipeline = dlt.pipeline(
             pipeline_name="anime_pipeline",
             destination=input.destination,
-            dataset_name="anime_data_new",
+            dataset_name="anime_data",
             progress="log",
             dev_mode=False,
         )
