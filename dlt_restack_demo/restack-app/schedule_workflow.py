@@ -8,9 +8,9 @@ async def main():
 
     client = Restack()
 
-    workflow_id = f"{int(time.time() * 1000)}-GreetingWorkflow"
+    workflow_id = f"{int(time.time() * 1000)}-PokePipeline"
     run_id = await client.schedule_workflow(
-        workflow_name="GreetingWorkflow",
+        workflow_name="PokePipeline",
         workflow_id=workflow_id,
     )
 
