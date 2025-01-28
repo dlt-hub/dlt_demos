@@ -6,12 +6,11 @@ from watchfiles import run_process
 
 from src.client import client
 from src.functions.function import poke_pipeline
-from src.workflows.workflow import GreetingWorkflow
+from src.workflows.workflow import PokePipeline
 
 
 async def main():
-
-    await client.start_service(workflows=[GreetingWorkflow], functions=[poke_pipeline])
+    await client.start_service(workflows=[PokePipeline], functions=[poke_pipeline])
 
 
 def run_services():
