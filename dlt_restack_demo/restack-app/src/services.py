@@ -5,12 +5,12 @@ import webbrowser
 from watchfiles import run_process
 
 from src.client import client
-from src.functions.function import poke_pipeline
-from src.workflows.workflow import PokePipeline
+from src.functions.function import anime_pipeline
+from src.workflows.workflow import AnimePipeline
 
 
 async def main():
-    await client.start_service(workflows=[PokePipeline], functions=[poke_pipeline])
+    await client.start_service(workflows=[AnimePipeline], functions=[anime_pipeline])
 
 
 def run_services():
