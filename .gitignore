@@ -9,3 +9,6 @@ secrets.toml
 *.duckdb
 *.wal
 .DS_Store
+_storage
+test-data
+data
