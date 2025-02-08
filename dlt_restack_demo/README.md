@@ -19,7 +19,23 @@ docker run -d --pull always --name restack -p 5233:5233 -p 6233:6233 -p 7233:723
 docker run -p 8080:8080 -p 50051:50051  -e ENABLE_MODULES=text2vec-openai,generative-openai cr.weaviate.io/semitechnologies/weaviate:1.28.4 
 ```
 
+## Add environment variables
+
+Copy from `.dlt` the `example.secrets.toml` and rename it to `secrets.toml` and add you OpenAI key there.
+
+```
+[destination.weaviate.credentials.additional_headers]
+X-OpenAI-Api-Key = "..."
+
+[openai]
+api_key = "..."
+```
+
 ## Start python shell
+
+```
+cd restack-app
+```
 
 If using uv:
 
