@@ -19,14 +19,34 @@ docker run -d --pull always --name restack -p 5233:5233 -p 6233:6233 -p 7233:723
 docker run -p 8080:8080 -p 50051:50051  -e ENABLE_MODULES=text2vec-openai,generative-openai cr.weaviate.io/semitechnologies/weaviate:1.28.4 
 ```
 
-## Run the service
+## Start python shell
+
+If using uv:
 
 ```bash
-poetry install
+uv venv && source .venv/bin/activate
 ```
 
+If using pip:
+
 ```bash
-poetry run dev
+python -m venv .venv && source .venv/bin/activate
+```
+
+## Install dependencies
+
+If using uv:
+
+```bash
+uv sync
+uv run dev
+```
+
+If using pip:
+
+```bash
+pip install -e .
+python -c "from src.services import watch_services; watch_services()"
 ```
 
 ## Usage
