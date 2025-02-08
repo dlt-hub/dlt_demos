@@ -1,0 +1,2 @@
+[destination.weaviate]
+module_config={text2vec-openai = {}, generative-openai = {}}
