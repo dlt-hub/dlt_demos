@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# dlt
+.dlt/secrets.toml
+.dlt/debezium.properties
+.dlt/*.toml
+!.dlt/*.example
+.dlt/pipelines/
+
+# DuckDB databases
+*.duckdb
+*.duckdb.wal
+
+# Temporary files
+tmp/
+*.log
+*.dat
+test_results_*.log
+cdc_test_*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+

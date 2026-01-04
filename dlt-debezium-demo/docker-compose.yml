@@ -1,0 +1,64 @@
+services:
+  # Source PostgreSQL database
+  postgres_source:
+    image: postgres:15-alpine
+    container_name: postgres_source_event_driven
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_HOST_AUTH_METHOD: trust
+    command: postgres -c wal_level=logical
+    volumes:
+      - postgres_data_event_driven:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d mydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    
+  # pgAdmin for easy database access
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_event_driven
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      postgres_source:
+        condition: service_healthy
+
+  # Source MySQL database
+  mysql_source:
+    image: mysql:8.0
+    container_name: mysql_source_event_driven
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: testdb
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpassword
+    command: >
+      --server-id=1
+      --log-bin=mysql-bin
+      --binlog_format=row
+      --binlog_row_image=full
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+    volumes:
+      - mysql_data_event_driven:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_event_driven:
+  mysql_data_event_driven:
+
