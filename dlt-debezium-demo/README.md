@@ -2,9 +2,9 @@
 
 ## Overview
 
-This project demonstrates **Universal Change Data Capture (CDC)** using the Embedded Debezium Engine combined with `dlt`. While this demo focuses on PostgreSQL, the architecture seamlessly supports MySQL, Oracle, SQL Server, MongoDB, DB2, and Cassandra.
+This project demonstrates **Change Data Capture (CDC)** using the Embedded Debezium Engine combined with `dlt`. While this demo focuses on PostgreSQL, the architecture is compatible with MySQL, Oracle, SQL Server, MongoDB, DB2, and Cassandra.
 
-By utilizing an Embedded Debezium Engine running directly in Python, this solution eliminates the need for complex infrastructure like Kafka or Zookeeper, providing a lightweight, "infrastructure-free" deployment.
+By utilizing an Embedded Debezium Engine running within Python, this solution removes the requirement for external Kafka or Zookeeper clusters, providing a localized deployment for capturing database events.
 
 ### The Data Flow
 
@@ -21,17 +21,17 @@ By utilizing an Embedded Debezium Engine running directly in Python, this soluti
 
 - **Python:** 3.8+
 - **Java:** 17+ (Required for the Debezium engine)
-- **Docker Desktop:** For running local test databases
+- **Docker:** For running local test databases
 
 ### 2. Installation & Configuration
 
-Install the core dependencies:
+Install the dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Configure your credentials by copying the template and editing your connection details:
+Configure credentials by copying the template:
 
 ```bash
 cp .dlt/example.secrets.toml .dlt/secrets.toml
@@ -39,11 +39,11 @@ cp .dlt/example.secrets.toml .dlt/secrets.toml
 
 Edit `.dlt/secrets.toml` with your PostgreSQL database connection details. See `.dlt/example.secrets.toml` for full configuration options.
 
-> **Note on Strategy:** Configure primary keys in `.dlt/config.toml` to enable the **Merge** write disposition. Without primary keys, the pipeline defaults to **Append** mode.
+Note on Strategy: Primary keys must be configured in .dlt/config.toml to enable the Merge write disposition. If no primary keys are provided, the pipeline defaults to Append mode.
 
 ### 3. Initialization
 
-Spin up the source database:
+Start the source database:
 
 ```bash
 docker-compose up -d
@@ -51,56 +51,54 @@ docker-compose up -d
 
 ## Architecture: MERGE vs. APPEND
 
-The pipeline automatically selects a loading strategy based on your primary key configuration:
+The pipeline selects a loading strategy based on the primary key configuration:
 
-| Feature | MERGE Mode  | APPEND Mode |
+| Feature | MERGE Mode | APPEND Mode |
 | --- | --- | --- |
-| **Trigger** | Primary keys defined in `.dlt/config.toml` or resource | No primary keys provided (Default) |
+| **Trigger** | Primary keys defined in `.dlt/config.toml` | No primary keys provided |
 | **Updates** | Overwrites existing records | Creates a new record (Full history) |
 | **Deletes** | Soft delete (`deleted=True`) | Audit record (`__op='delete'`) |
-
 
 ## Executing the Demo
 
 ### Manual Real-Time Stream
 
-Start the CDC pipeline to begin monitoring PostgreSQL for changes:
+Start the CDC pipeline:
 
 ```bash
 python debezium_dlt_loader.py
 ```
 
-The pipeline will connect to your PostgreSQL database, perform an initial snapshot, and begin streaming changes in real-time. Keep it running until you press `Ctrl+C`.
+The pipeline will perform an initial snapshot and begin streaming changes. Terminate with `Ctrl+C`.
 
 ### Database Preparation
 
-Connect to PostgreSQL to create a test environment:
+Connect to PostgreSQL to prepare the test environment:
 
 ```bash
 docker exec -it postgres_source_event_driven psql -U myuser -d mydb
 ```
 
 ```sql
--- 1. Create a test table
+-- Create a test table
 CREATE TABLE IF NOT EXISTS test_users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100),
     email VARCHAR(100)
 );
 
--- 2. Enable CDC via Publication
+-- Enable CDC via Publication
 DROP PUBLICATION IF EXISTS debezium_pub;
 CREATE PUBLICATION debezium_pub FOR TABLE test_users;
 
--- 3. Capture full row state for deletes
+-- Capture full row state for deletes
 ALTER TABLE test_users REPLICA IDENTITY FULL;
 ```
 
 ### Verification
 
-As you perform `INSERT`, `UPDATE`, or `DELETE` operations in PostgreSQL, the changes will replicate instantly to DuckDB (located in `.dlt/pipelines/debezium_cdc/`).
+Perform database operations to see them replicated in DuckDB (located at `.dlt/pipelines/debezium_cdc/`):
 
-**Test INSERT operation:**
 ```sql
 INSERT INTO test_users (name, email) VALUES ('Alice', 'alice@example.com');
 INSERT INTO test_users (name, email) VALUES ('Bob', 'bob@example.com');
@@ -148,15 +146,7 @@ WHERE relname = 'test_users';
 SELECT pg_drop_replication_slot('debezium_slot');
 ```
 
-**Clean pipeline state:**
-```bash
-python -m dlt pipeline debezium_cdc drop --drop-all
-rm -f tmp/offsets_postgres_debezium.dat
-```
-
-> **Note:** If you see the error "offset is no longer available on the server", delete the offset file and restart. This happens when PostgreSQL has purged old WAL segments that the offset file references.
-
-> **⚠️ Critical Requirement:** Always set `REPLICA IDENTITY FULL` on PostgreSQL tables. Without this, `DELETE` events will only contain the Primary Key, causing `NULL` values for all other columns in your destination.
+> **⚠️ Requirement:** Always set `REPLICA IDENTITY FULL` on PostgreSQL tables. Without this, `DELETE` events will only contain the Primary Key, resulting in `NULL` values for all other columns in the destination.
 
 > **Note:** For PostgreSQL-only CDC use cases, consider dlt's native `pg_replication` source for a simpler setup (no Java or Debezium engine required).
 
@@ -172,7 +162,7 @@ rm -f tmp/offsets_postgres_debezium.dat
 > │   └── test_mysql_cdc.sh           # MySQL end-to-end test script
 > ├── requirements.txt                # Python dependencies
 > ├── docker-compose.yml              # PostgreSQL database setup
-> ├── MYSQL.md                              # MySQL-specific setup guide
+> ├── MYSQL.md                        # MySQL-specific setup guide
 > ├── .dlt/
 > │   ├── example.secrets.toml        # Config template
 > │   └── example.config.toml         # Primary keys template
