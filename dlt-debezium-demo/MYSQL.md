@@ -62,7 +62,7 @@ Required privileges:
 
 ## Architecture: MERGE vs. APPEND
 
-The pipeline implements `dlt` write dispositions based on the presence of primary keys. For a deep dive into how these modes handle schema evolution and data deduplication, refer to the [dlt destinations documentation](https://dlthub.com/docs/destinations).
+The pipeline implements `dlt` write dispositions based on the presence of primary keys. For a deep dive into how these modes handle schema evolution and data deduplication, refer to the [dlt destinations documentation](https://dlthub.com/docs/general-usage/incremental-loading#choosing-a-write-disposition).
 
 ### Loading Strategies
 
