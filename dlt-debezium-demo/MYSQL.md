@@ -2,96 +2,135 @@
 
 This guide provides MySQL-specific instructions for setting up Change Data Capture (CDC) with Debezium and dlt.
 
-## Prerequisites
+## Setup Guide
 
-Same as main README: Python 3.8+, Java 17+, and Docker Desktop.
+### 1. Environment Requirements
 
-## MySQL Setup
+- **Python:** 3.8+
+- **Java:** 17+ (Required for the Debezium engine)
+- **Docker:** For running local test databases
 
-1. **Start MySQL database:**
+### 2. Installation & Configuration
 
-   ```bash
-   docker run -d --name mysql_source \
-     -e MYSQL_ROOT_PASSWORD=rootpassword \
-     -e MYSQL_DATABASE=mydb \
-     -e MYSQL_USER=myuser \
-     -e MYSQL_PASSWORD=mypassword \
-     -p 3306:3306 \
-     mysql:8.0
-   ```
+Install the dependencies:
 
-   Wait for MySQL to be ready:
-   ```bash
-   docker exec mysql_source mysqladmin ping -h localhost -uroot -prootpassword --silent
-   ```
+```bash
+pip install -r requirements.txt
+```
 
-2. **Grant required privileges for Debezium:**
+Configure credentials by copying the template:
 
-   ```bash
-   docker exec -i mysql_source mysql -u root -prootpassword << 'EOF'
-   GRANT REPLICATION CLIENT, REPLICATION SLAVE, RELOAD, FLUSH_TABLES ON *.* TO 'myuser'@'%';
-   FLUSH PRIVILEGES;
-   EOF
-   ```
+```bash
+cp .dlt/example.secrets.toml .dlt/secrets.toml
+```
 
-   **Why these privileges are needed:**
-   - `REPLICATION CLIENT` / `REPLICATION SLAVE`: Required for binlog streaming
-   - `RELOAD` / `FLUSH_TABLES`: Required for snapshot phase (table locking)
+Edit `.dlt/secrets.toml` with your MySQL database connection details. See `.dlt/example.secrets.toml` for full configuration options.
 
-3. **Configure database connection:**
+Note on strategy: Merge requires primary keys (set in `.dlt/config.toml` or on the dlt resource). If primary keys are missing, the pipeline automatically uses Append mode.
 
-   Copy and edit `.dlt/secrets.toml`:
+### 3. MySQL Database Setup
 
-   ```bash
-   cp .dlt/example.secrets.toml .dlt/secrets.toml
-   ```
+**Start MySQL database:**
 
-   Configure MySQL connection in `.dlt/secrets.toml`:
+```bash
+docker run -d --name mysql_source \
+  -e MYSQL_ROOT_PASSWORD=rootpassword \
+  -e MYSQL_DATABASE=mydb \
+  -e MYSQL_USER=myuser \
+  -e MYSQL_PASSWORD=mypassword \
+  -p 3306:3306 \
+  mysql:8.0
+```
 
-   ```toml
-   # MySQL connection details
-   [sources.debezium.mysql]
-   host = "localhost"
-   port = 3306
-   user = "myuser"
-   password = "mypassword"
-   database = "mydb"
+Wait for MySQL to be ready:
+```bash
+docker exec mysql_source mysqladmin ping -h localhost -uroot -prootpassword --silent
+```
 
-   # General Debezium settings
-   [sources.debezium]
-   database_include_list = "mydb"
-   table_include_list = "mydb.test_users"
-   snapshot_mode = "initial"
-   ```
+**Grant required privileges for Debezium:**
 
-   Setup primary keys in `.dlt/config.toml` as shown in `.dlt/example.config.toml` to use merge write disposition.
+```bash
+docker exec -i mysql_source mysql -u root -prootpassword << 'EOF'
+GRANT REPLICATION CLIENT, REPLICATION SLAVE, RELOAD, FLUSH_TABLES ON *.* TO 'myuser'@'%';
+FLUSH PRIVILEGES;
+EOF
+```
 
-4. **Set up test table:**
+Required privileges:
+- `REPLICATION CLIENT` / `REPLICATION SLAVE`: Required for binlog streaming
+- `RELOAD` / `FLUSH_TABLES`: Required for snapshot phase (table locking)
 
-   ```bash
-   docker exec -i mysql_source mysql -uroot -prootpassword << 'SQL'
-   CREATE DATABASE IF NOT EXISTS testdb;
-   USE testdb;
-   CREATE TABLE test_users (
-       id INT AUTO_INCREMENT PRIMARY KEY,
-       name VARCHAR(100),
-       email VARCHAR(100),
-       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-   );
-   SQL
-   ```
+## Architecture: MERGE vs. APPEND
 
-## Running the Pipeline
+The pipeline implements `dlt` write dispositions based on the presence of primary keys. For a deep dive into how these modes handle schema evolution and data deduplication, refer to the [dlt destinations documentation](https://dlthub.com/docs/destinations).
 
-**Start MySQL CDC Pipeline:**
+### Loading Strategies
+
+| Disposition | Requirement | Behavior on Delete |
+| --- | --- | --- |
+| **MERGE** | Primary Key defined | Row updated with `deleted=True` |
+| **APPEND** | No Primary Key | New audit record with `__op='delete'` |
+
+## Executing the Demo
+
+### Manual Real-Time Stream
+
+Start the CDC pipeline:
 
 ```bash
 python debezium_dlt_loader_mysql.py
 ```
 
-This uses the `mysql_cdc` pipeline name and creates data in the `mysql_cdc_data` dataset.
+The pipeline will perform an initial snapshot and begin streaming changes. Terminate with `Ctrl+C`.
 
-## MySQL Setup Commands
+### Database Preparation
+
+Connect to MySQL to prepare the test environment:
+
+```bash
+docker exec -it mysql_source mysql -u myuser -pmypassword mydb
+```
+
+```sql
+-- Create a test table
+CREATE TABLE IF NOT EXISTS test_users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100)
+);
+```
+
+### Verification
+
+Perform database operations in the MySQL terminal to see them replicated in DuckDB (local storage: `.dlt/pipelines/mysql_cdc/`):
+
+```sql
+-- 1. Insert records
+INSERT INTO test_users (name, email) VALUES ('Alice', 'alice@example.com');
+INSERT INTO test_users (name, email) VALUES ('Bob', 'bob@example.com');
+
+-- 2. Update a record (Changes the email for Alice)
+UPDATE test_users SET email = 'alice.updated@example.com' WHERE name = 'Alice';
+
+-- 3. Delete a record (Triggers soft-delete in MERGE or audit-row in APPEND)
+DELETE FROM test_users WHERE name = 'Bob';
+```
+
+> **Tip:** You can query the destination DuckDB file using the `dlt` CLI or any DuckDB-compatible tool to verify that the rows reflect these changes in near real-time.
+
+### Automated Testing
+
+For automated end-to-end testing, run the test script:
+
+```bash
+./tests/test_mysql_cdc.sh
+```
+
+This script automatically sets up the database, runs the pipeline, executes test operations, and verifies results.
+
+## Troubleshooting & Reference
+
+### Essential MySQL Commands
 
 **Connect to MySQL:**
 ```bash
@@ -105,78 +144,14 @@ SHOW VARIABLES LIKE 'binlog_format';
 -- Should show 'ROW' for binlog_format
 ```
 
-**Create test table:**
-```sql
-CREATE TABLE IF NOT EXISTS test_users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100),
-    email VARCHAR(100)
-);
-```
-
-**Test INSERT operation:**
-```sql
-INSERT INTO test_users (name, email) VALUES ('Alice', 'alice@example.com');
-INSERT INTO test_users (name, email) VALUES ('Bob', 'bob@example.com');
-```
-
-**Test UPDATE operation:**
-```sql
-UPDATE test_users SET email = 'alice.updated@example.com' WHERE name = 'Alice';
-```
-
-**Test DELETE operation:**
-```sql
-DELETE FROM test_users WHERE name = 'Bob';
-```
-
-## Viewing Your Data
-
-Query the DuckDB database:
-
-```python
-import duckdb
-from pathlib import Path
-
-# Find DuckDB file in pipeline state
-pipeline_dir = Path(".dlt/pipelines/mysql_cdc")
-db_file = list(pipeline_dir.rglob("*.duckdb"))[0]
-
-con = duckdb.connect(str(db_file), read_only=True)
-
-# Show all tables
-tables = con.execute("SHOW TABLES").fetchall()
-print("Tables:", tables)
-
-# Query data from mysql_cdc_data dataset
-records = con.execute("SELECT * FROM mysql_cdc_data.test_users ORDER BY id").fetchall()
-for r in records:
-    print(r)
-
-con.close()
-```
-
-> Note: The dataset name for MySQL is `mysql_cdc_data`. In DuckDB, datasets correspond to schemas, so tables are accessed as `dataset_name.table_name`.
-
-## Automated Testing
-
-Run the MySQL end-to-end test script:
-
+**Drop replication state (for fresh start):**
 ```bash
-./tests/test_mysql_cdc.sh
+python -m dlt pipeline mysql_cdc drop --drop-all
+rm -f tmp/offsets_mysql_debezium.dat
 ```
 
-This script automatically sets up the database, runs the pipeline, executes test operations, and verifies results.
+## Technical Notes
 
-## MySQL-Specific Notes
-
-- **Full row data in DELETE events:** MySQL includes full row data in DELETE events by default, so no additional configuration is needed beyond privileges (unlike PostgreSQL which requires `REPLICA IDENTITY FULL`).
-
-- **Binary logging:** MySQL binary logging must be enabled (it is by default in MySQL 8.0+). The binlog format should be `ROW` for CDC to work correctly.
-
-- **Pipeline cleanup:** When restarting, clean up MySQL pipeline state:
-  ```bash
-  python -m dlt pipeline mysql_cdc drop --drop-all
-  rm -f tmp/offsets_mysql_debezium.dat
-  ```
-
+* **Full row data in DELETE events:** MySQL includes full row data in DELETE events by default, so no additional configuration is needed beyond privileges (unlike PostgreSQL which requires `REPLICA IDENTITY FULL`).
+* **Binary logging:** MySQL binary logging must be enabled (it is by default in MySQL 8.0+). The binlog format should be `ROW` for CDC to work correctly.
+* **Dataset naming:** The dataset name for MySQL is `mysql_cdc_data`. In DuckDB, datasets correspond to schemas, so tables are accessed as `dataset_name.table_name`.

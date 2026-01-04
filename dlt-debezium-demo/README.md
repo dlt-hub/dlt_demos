@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project demonstrates **Change Data Capture (CDC)** using the Embedded Debezium Engine combined with `dlt`. While this demo focuses on PostgreSQL, the architecture is compatible with MySQL, Oracle, SQL Server, MongoDB, DB2, and Cassandra.
+This project demonstrates **Change Data Capture (CDC)** using the Embedded Debezium Engine combined with dlt. While this demo focuses on PostgreSQL, the architecture is compatible with MySQL, Oracle, SQL Server, MongoDB, DB2, and Cassandra.
 
 By utilizing an Embedded Debezium Engine running within Python, this solution removes the requirement for external Kafka or Zookeeper clusters, providing a localized deployment for capturing database events.
 
@@ -39,7 +39,9 @@ cp .dlt/example.secrets.toml .dlt/secrets.toml
 
 Edit `.dlt/secrets.toml` with your PostgreSQL database connection details. See `.dlt/example.secrets.toml` for full configuration options.
 
-Note on Strategy: Primary keys must be configured in .dlt/config.toml to enable the Merge write disposition. If no primary keys are provided, the pipeline defaults to Append mode.
+Note on strategy:
+Merge requires primary keys (set in `.dlt/config.toml` or on the dlt resource).
+If primary keys are missing, the pipeline automatically uses Append mode.
 
 ### 3. Initialization
 
@@ -51,13 +53,14 @@ docker-compose up -d
 
 ## Architecture: MERGE vs. APPEND
 
-The pipeline selects a loading strategy based on the primary key configuration:
+The pipeline implements `dlt` write dispositions based on the presence of primary keys. For a deep dive into how these modes handle schema evolution and data deduplication, refer to the [dlt destinations documentation](https://dlthub.com/docs/destinations).
 
-| Feature | MERGE Mode | APPEND Mode |
+### Loading Strategies
+
+| Disposition | Requirement | Behavior on Delete |
 | --- | --- | --- |
-| **Trigger** | Primary keys defined in `.dlt/config.toml` | No primary keys provided |
-| **Updates** | Overwrites existing records | Creates a new record (Full history) |
-| **Deletes** | Soft delete (`deleted=True`) | Audit record (`__op='delete'`) |
+| **MERGE** | Primary Key defined | Row updated with `deleted=True` |
+| **APPEND** | No Primary Key | New audit record with `__op='delete'` |
 
 ## Executing the Demo
 
@@ -97,22 +100,21 @@ ALTER TABLE test_users REPLICA IDENTITY FULL;
 
 ### Verification
 
-Perform database operations to see them replicated in DuckDB (located at `.dlt/pipelines/debezium_cdc/`):
+Perform database operations in the PostgreSQL terminal to see them replicated in DuckDB (local storage: `.dlt/pipelines/debezium_cdc/`):
 
 ```sql
+-- 1. Insert records
 INSERT INTO test_users (name, email) VALUES ('Alice', 'alice@example.com');
 INSERT INTO test_users (name, email) VALUES ('Bob', 'bob@example.com');
-```
 
-**Test UPDATE operation:**
-```sql
+-- 2. Update a record (Changes the email for Alice)
 UPDATE test_users SET email = 'alice.updated@example.com' WHERE name = 'Alice';
-```
 
-**Test DELETE operation:**
-```sql
+-- 3. Delete a record (Triggers soft-delete in MERGE or audit-row in APPEND)
 DELETE FROM test_users WHERE name = 'Bob';
 ```
+
+> **Tip:** You can query the destination DuckDB file using the `dlt` CLI or any DuckDB-compatible tool to verify that the rows reflect these changes in near real-time.
 
 ### Automated Testing
 
@@ -146,27 +148,27 @@ WHERE relname = 'test_users';
 SELECT pg_drop_replication_slot('debezium_slot');
 ```
 
-> **⚠️ Requirement:** Always set `REPLICA IDENTITY FULL` on PostgreSQL tables. Without this, `DELETE` events will only contain the Primary Key, resulting in `NULL` values for all other columns in the destination.
+## Technical Notes
 
-> **Note:** For PostgreSQL-only CDC use cases, consider dlt's native `pg_replication` source for a simpler setup (no Java or Debezium engine required).
+* **Replica Identity:** Always set `REPLICA IDENTITY FULL` on PostgreSQL tables. Without this, `DELETE` events will only contain the Primary Key, resulting in `NULL` values for all other columns in the destination.
+* **Alternative:** For PostgreSQL-only use cases, consider dlt's native `pg_replication` source. It provides a simpler setup that does not require Java or the Debezium engine.
+* **MySQL Setup:** For MySQL-specific instructions, see [MYSQL.md](MYSQL.md).
 
-> **Project Structure:**
-> 
-> ```
-> dlt-debezium-demo/
-> ├── debezium_dlt_loader.py          # PostgreSQL CDC loader
-> ├── debezium_dlt_loader_mysql.py    # MySQL CDC loader
-> ├── config_helper_universal.py      # Config generator
-> ├── tests/
-> │   ├── test_postgres_cdc.sh        # PostgreSQL end-to-end test script
-> │   └── test_mysql_cdc.sh           # MySQL end-to-end test script
-> ├── requirements.txt                # Python dependencies
-> ├── docker-compose.yml              # PostgreSQL database setup
-> ├── MYSQL.md                        # MySQL-specific setup guide
-> ├── .dlt/
-> │   ├── example.secrets.toml        # Config template
-> │   └── example.config.toml         # Primary keys template
-> └── README.md                       # This file (PostgreSQL focus)
-> ```
+## Project Structure
 
-> **MySQL Setup:** For MySQL-specific setup instructions, see [MYSQL.md](MYSQL.md).
+```text
+dlt-debezium-demo/
+├── debezium_dlt_loader.py          # PostgreSQL CDC loader
+├── debezium_dlt_loader_mysql.py    # MySQL CDC loader
+├── config_helper_universal.py      # Config generator
+├── tests/
+│   ├── test_postgres_cdc.sh        # PostgreSQL end-to-end test script
+│   └── test_mysql_cdc.sh           # MySQL end-to-end test script
+├── requirements.txt                # Python dependencies
+├── docker-compose.yml              # PostgreSQL database setup
+├── MYSQL.md                        # MySQL-specific setup guide
+├── .dlt/
+│   ├── example.secrets.toml        # Config template
+│   └── example.config.toml         # Primary keys template
+└── README.md                       # This file
+```
