@@ -15,26 +15,6 @@ It focuses on the simplest shape of CDC: **point-to-point replication** (source 
   - **MERGE mode:** keep one current table (updates apply, deletes are soft-deleted)
   - **APPEND mode:** keep an audit log of every change event
 
-## When this is a good fit
-
-**Use Embedded Debezium + dlt when:**
-- **CDC without a streaming platform:** Capture changes without running Kafka or managing streaming infrastructure.
-- **Rapid prototyping:** Go from a source database to a queryable destination in minutes.
-- **Frequent schema changes:** Handle new columns and `ALTER TABLE` evolution automatically with dlt.
-- **Lightweight runtime:** Deploy as a single container or VM.
-- **Multi-DB pattern:** Use one consistent pattern across Postgres and MySQL, and extend it to SQL Server or Oracle.
-- **Low-impact capture:** Read transaction logs (WAL/Binlog) to minimize load on the production database.
-- **Audit-ready history:** Persist inserts, updates, and deletes to maintain a complete, queryable change log.
-
-**When this may not be the best fit:**
-- **Many consumers:** If 10+ downstream systems need the same change stream, a centralized broker like Kafka is usually more efficient. This architecture is optimized for point-to-point replication (source ➜ destination).
-- **Very high throughput:** At tens of thousands of changes per second, the embedded engine and the Python/JVM boundary can become a bottleneck.
-- **Horizontal scaling:** This runs as a single process. You can scale up (larger instance), but you can't scale out across multiple nodes like Kafka Connect.
-- **Strict exactly-once requirements:** This provides at-least-once semantics. If the destination cannot tolerate duplicates on restart, you must rely on destination-side deduplication (for example merge write disposition) or use a true end-to-end exactly-once system.
-- **Java-restricted environments:** Debezium requires a JVM. If you can't ship Java in your runtime environment, this isn't a good fit.
-
-> **Note:** For PostgreSQL-only workloads, consider `dlt`'s native `pg_replication` source—no Java dependency.
-
 ## How it Works
 
 - Debezium runs **embedded in-process**
@@ -44,6 +24,8 @@ It focuses on the simplest shape of CDC: **point-to-point replication** (source 
   - deduplication and merges (when configured)
 
 This is designed for **source ➜ destination replication**, not for fan-out or complex stream processing.
+
+> Read more about [use cases here.](#usecases)
 
 ### The Data Flow
 A step-by-step breakdown of how data moves from your source database to your warehouse.
@@ -99,6 +81,28 @@ The `docker-compose.yml` runs source databases with CDC already configured. The 
 - **Python handler (`DltChangeHandler`):** Processes events into a dlt-compatible format and ensures batching.
 - **dlt pipeline:** Normalizes nested JSON into relational tables and handles automatic schema migrations.
 - **DuckDB:** Local destination for the demo (swappable for Snowflake, BigQuery, etc.).
+
+<a name="usecases"></a>
+## Usecases
+#### When this is a good fit
+
+**Use Embedded Debezium + dlt when:**
+- **CDC without a streaming platform:** Capture changes without running Kafka or managing streaming infrastructure.
+- **Rapid prototyping:** Go from a source database to a queryable destination in minutes.
+- **Frequent schema changes:** Handle new columns and `ALTER TABLE` evolution automatically with dlt.
+- **Lightweight runtime:** Deploy as a single container or VM.
+- **Multi-DB pattern:** Use one consistent pattern across Postgres and MySQL, and extend it to SQL Server or Oracle.
+- **Low-impact capture:** Read transaction logs (WAL/Binlog) to minimize load on the production database.
+- **Audit-ready history:** Persist inserts, updates, and deletes to maintain a complete, queryable change log.
+
+#### When this may not be the best fit:
+- **Many consumers:** If 10+ downstream systems need the same change stream, a centralized broker like Kafka is usually more efficient. This architecture is optimized for point-to-point replication (source ➜ destination).
+- **Very high throughput:** At tens of thousands of changes per second, the embedded engine and the Python/JVM boundary can become a bottleneck.
+- **Horizontal scaling:** This runs as a single process. You can scale up (larger instance), but you can't scale out across multiple nodes like Kafka Connect.
+- **Strict exactly-once requirements:** This provides at-least-once semantics. If the destination cannot tolerate duplicates on restart, you must rely on destination-side deduplication (for example merge write disposition) or use a true end-to-end exactly-once system.
+- **Java-restricted environments:** Debezium requires a JVM. If you can't ship Java in your runtime environment, this isn't a good fit.
+
+> **Note:** For PostgreSQL-only workloads, consider `dlt`'s native `pg_replication` source—no Java dependency.
 
 ## Setup Guide
 
