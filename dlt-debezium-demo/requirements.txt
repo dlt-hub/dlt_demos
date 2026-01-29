@@ -1,0 +1,19 @@
+# Event-Driven CDC Pipeline with dlt
+# Core requirements for minimal CDC pipeline (without orchestration)
+
+# Debezium Python integration (for change detection)
+pydbzengine>=0.1.0
+
+# dltHub for data pipeline 
+dlt[duckdb]>=1.20.0
+
+# PostgreSQL driver (for dlt sql_database source)
+psycopg2-binary>=2.9.0
+
+# Data display dependencies (required for .df() methods)
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Note: Java is required for pydbzengine (Debezium)
+# Install separately: sudo apt install -y openjdk-17-jdk
+

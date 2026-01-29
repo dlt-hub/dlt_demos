@@ -1,0 +1,93 @@
+services:
+  # Source PostgreSQL database
+  postgres_source:
+    image: postgres:15.5-alpine
+    container_name: postgres_source_event_driven
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_HOST_AUTH_METHOD: trust
+    command: postgres -c wal_level=logical
+    volumes:
+      - postgres_data_event_driven:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d mydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    
+  # pgAdmin for easy database access
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_event_driven
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      postgres_source:
+        condition: service_healthy
+
+  # Source MySQL database
+  mysql_source:
+    image: mysql:8.0.37
+    container_name: mysql_source_event_driven
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: testdb
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpassword
+    command: >
+      --server-id=1
+      --log-bin=mysql-bin
+      --binlog_format=row
+      --binlog_row_image=full
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+    volumes:
+      - mysql_data_event_driven:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Change Data Capture Pipeline: Debezium (Java) + dlt (Python)
+  # Captures database changes and loads them into DuckDB
+  debezium_dlt_pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: debezium_dlt_pipeline_event_driven
+    # Run interactively by default (can override with docker-compose run)
+    stdin_open: true
+    tty: true
+    # Note: Configuration comes from .dlt/secrets.toml (mounted volume)
+    # The scripts use dlt.secrets.get() to read config, not environment variables
+    volumes:
+      # Mount .dlt directory for configuration and data persistence
+      - ./.dlt:/app/.dlt
+      # Mount scripts for easy updates without rebuild
+      - ./debezium_dlt_loader.py:/app/debezium_dlt_loader.py
+      - ./debezium_dlt_loader_mysql.py:/app/debezium_dlt_loader_mysql.py
+      - ./config_helper_universal.py:/app/config_helper_universal.py
+    depends_on:
+      postgres_source:
+        condition: service_healthy
+      mysql_source:
+        condition: service_healthy
+    # Don't start automatically - user will run it manually
+    # Usage: docker-compose --profile cdc run --rm debezium_dlt_pipeline
+    profiles:
+      - cdc
+
+volumes:
+  postgres_data_event_driven:
+  mysql_data_event_driven:
+
