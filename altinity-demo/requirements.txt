@@ -1,0 +1,2 @@
+dlt[iceberg]>=1.22.2
+dlthub>=0.9.1
