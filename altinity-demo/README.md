@@ -40,7 +40,7 @@ pip install "dlt[filesystem,pyiceberg]>=1.9.1" "dlthub>=0.9.1"
 After installation, issue a trial license for the Iceberg destination:
 
 ```bash
-dlt license issue dlthub.iceberg
+dlt license issue dlthub.destinations.iceberg
 ```
 
 This prints your license key and inserts it into your `.dlt` config automatically. To verify:
