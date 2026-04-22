@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# dlt
+.dlt/secrets.toml
+_local/
+
+# include duckdb snapshots for this demo
+!*.duckdb
