@@ -66,6 +66,7 @@ def repos_with_stars(
           COUNT(t.id) > {min_stars}
         ORDER BY
           COUNT(t.id) DESC
+        LIMIT 1
         """
 
         row_count = 0
