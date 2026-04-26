@@ -1,0 +1,16 @@
+[project]
+name = "github-search-app"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "dlt-runtime>=0.24.1",
+    "dlt[filesystem,hub,lancedb,workspace]==1.24.0",
+    "dlthub>=0.22.1",
+    "duckdb",
+    "google-cloud-bigquery",
+    "google-generativeai",
+    "httpx>=0.28.1",
+    "parallel-web>=0.4.2",
+    "pyarrow-hotfix>=0.7",
+    "pydantic",
+]
