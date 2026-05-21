@@ -1,0 +1,2 @@
+dlt[duckdb]>=1.26.0
+acryl-datahub[datahub-rest]>=1.5.0
