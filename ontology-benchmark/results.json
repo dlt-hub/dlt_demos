@@ -1,0 +1,602 @@
+[
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq01",
+    "question": "What makes a seat 'at-risk' in this dataset?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## What Makes a Seat \"At-Risk\"?\n\nBased purely on what's observable in the dataset, here's what I can tell you:\n\n### The `is_at_risk` Field\n\nThe `is_at_risk` boolean flag in **dim_seat** directly marks seats as at-risk, but the dataset doesn't explicitly define the business logic behind it. However, some patterns are visible:\n\n### Observable Patterns\n\n| Condition | `is_at_risk` Value |\n|---|---|\n| `SMB_MONTHLY_LEGACY` plan | `<NA>` (not applicable) |\n| `ENT_ANNUAL_V2` plan (admin role) | `<NA>` (not applicable) |\n| `SMB_MONTHLY` or `PRO_ANNUAL` member seats | `True` or `False` |\n\n### Key Observations\n\n1. **Legacy & Enterprise plans are excluded** \u2014 seats on `SMB_MONTHLY_LEGACY` and `ENT_ANNUAL_V2` (admin) plans have `<NA>`, suggesting the at-risk concept **doesn't apply** to those plan types\n2. **Only member-role seats on active plans** are evaluated for at-risk status\n3. The dataset alone **doesn't reveal the exact criteria** (e.g., inactivity thresholds, login frequency) \u2014 that logic likely lives in the pipeline that populates this field\n\n### What I'd Need to Determine the Logic\n- A definition table or business rules document\n- Joining `dim_seat` with `fact_activity` to correlate at-risk flags with login recency/frequency\n\nWould you like me to attempt that activity-based analysis to **infer** what might be driving the at-risk classification?",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq01",
+    "question": "What makes a seat 'at-risk' in this dataset?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## What Makes a Seat \"At-Risk\"?\n\nBased purely on what's observable in this dataset, here's what I can tell you:\n\n### The `is_at_risk` Flag\nThe `is_at_risk` boolean column in **dim_seat** is the direct indicator \u2014 but its definition isn't explicitly documented in the schema. I can only infer patterns from the data.\n\n---\n\n### Observable Patterns\n\n| Observation | Detail |\n|---|---|\n| **Only applies to certain plan types** | `is_at_risk = True` appears **only on `SMB_MONTHLY` and `PRO_ANNUAL`** seats \u2014 never on `SMB_MONTHLY_LEGACY` or `ENT_ANNUAL_V2` |\n| **Legacy & Enterprise seats are null** | All `SMB_MONTHLY_LEGACY` and `ENT_ANNUAL_V2` seats show `<NA>` \u2014 suggesting the risk flag **isn't calculated** for those plans |\n| **Admin seats are excluded** | Both admin seats (`seat_002`, `seat_017`) have `<NA>` \u2014 the flag appears to apply to **member roles only** |\n| **Clustering by account** | At-risk seats tend to cluster within the same account (e.g., `acc_005` and `acc_004` each have 2 at-risk seats) |\n\n---\n\n### \u26a0\ufe0f Important Caveat\nThe **business logic** driving this flag (e.g., inactivity threshold, login recency, session duration) **is not defined in the schema or visible in this dataset**. To know the precise definition, you'd need to look at the **upstream pipeline logic** that populates `dim_seat.is_at_risk`.\n\nWould you like me to check if activity patterns (e.g., login recency or session duration) correlate with at-risk seats?",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq01",
+    "question": "What makes a seat 'at-risk' in this dataset?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## At-Risk Seat Definition\n\nA seat is flagged **`is_at_risk = True`** when **both** of the following conditions are true simultaneously:\n\n### Condition 1 \u2014 No valid login in the inactivity window\n- **No login** with `session_duration_seconds > 120` within the lookback period\n- Sessions of \u2264 120 seconds are **ignored** (treated as if they never happened)\n- Lookback window:\n  - **14 days** for `SMB_MONTHLY` and `PRO_ANNUAL` seats\n  - **21 days** for `ENT_ANNUAL_V2` seats\n\n### Condition 2 \u2014 No API call in the last 7 days\n- No `api_call` activity recorded within the last **7 days**\n\n> \u26a0\ufe0f Both conditions must be met \u2014 a seat with no logins but recent API calls is **not** at-risk.\n\n---\n\n## Important Exclusions\n\nCertain seats are **never** evaluated for at-risk status, regardless of activity:\n\n| Exclusion | Reason |\n|---|---|\n| `plan_type = 'SMB_MONTHLY_LEGACY'` | Excluded entirely from churn calculations |\n| `role = 'admin'` | Excluded regardless of activity level |\n\n---\n\n## Practical Example from the Data\n\nLooking at **seat_005** and **seat_006** (both `SMB_MONTHLY`, `is_at_risk = True`): they would have no valid login in the past 14 days and no API call in the past 7 days, confirming both thresholds were breached.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq02",
+    "question": "How many seats are currently at-risk?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the `dim_seat` table, counting all seats where `is_at_risk = True`:\n\n| Plan | At-Risk Seats |\n|------|--------------|\n| SMB_MONTHLY | seat_005, seat_006, seat_019, seat_020 |\n| PRO_ANNUAL | seat_010, seat_011, seat_013, seat_014 |\n\n**Total at-risk seats: 8**",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq02",
+    "question": "How many seats are currently at-risk?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Looking at the **dim_seat** table, I'll count the seats where `is_at_risk = True`:\n\n| Seat ID  | Account SK           | Plan Type   |\n|----------|----------------------|-------------|\n| seat_005 | 8097184010347759120  | SMB_MONTHLY |\n| seat_006 | 8097184010347759120  | SMB_MONTHLY |\n| seat_010 | 5524556371472755810  | PRO_ANNUAL  |\n| seat_011 | 5524556371472755810  | PRO_ANNUAL  |\n| seat_013 | 1306990129983601653  | PRO_ANNUAL  |\n| seat_014 | 1306990129983601653  | PRO_ANNUAL  |\n| seat_019 | 8287331769356759010  | SMB_MONTHLY |\n| seat_020 | 8287331769356759010  | SMB_MONTHLY |\n\n**There are 8 at-risk seats** across 4 accounts, split between SMB_MONTHLY (4 seats) and PRO_ANNUAL (4 seats) plans.\n\n> \u26a0\ufe0f Note: Seats with `<NA>` for `is_at_risk` (typically legacy plan types like SMB_MONTHLY_LEGACY and ENT_ANNUAL_V2 admin/member roles) were excluded as they have no risk flag assigned.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq02",
+    "question": "How many seats are currently at-risk?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## At-Risk Seat Analysis\n\nBased on the ontology rules, a seat is **at-risk** when:\n- **No valid login** in the last 14 days (21 days for `ENT_ANNUAL_V2`) \u2014 where valid = `session_duration_seconds > 120`\n- **AND no API call** in the last 7 days\n- Excluding `SMB_MONTHLY_LEGACY` seats and `admin` role seats\n\n---\n\n### Reference Date\nUsing the most recent activity date in the data: **2026-05-25**\n\n- Login lookback (standard): \u2265 2026-05-11\n- Login lookback (ENT_ANNUAL_V2): \u2265 2026-05-04\n- API call lookback: \u2265 2026-05-18\n\n---\n\n### Step 1 \u2014 Exclude ineligible seats\n\nRemoving from consideration:\n- `SMB_MONTHLY_LEGACY` seats: seat_003, seat_004, seat_021, seat_022, seat_023\n- `admin` role seats: seat_002, seat_017\n\n**Remaining eligible seats:** seat_001, seat_005, seat_006, seat_007, seat_008, seat_009, seat_010, seat_011, seat_012, seat_013, seat_014, seat_015, seat_016, seat_018, seat_019, seat_020\n\n---\n\n### Step 2 \u2014 Check each eligible seat\n\nI need to join seats \u2192 their `seat_sk` \u2192 activity. *(The seat_sk \u2194 source_id mapping isn't explicitly shown, but `is_at_risk` is already derived in `dim_seat`.)*\n\nUsing the **`is_at_risk`** flag already present in `dim_seat` for eligible seats:\n\n| Seat | Plan Type | Role | is_at_risk |\n|---|---|---|---|\n| seat_001 | SMB_MONTHLY | member | False |\n| seat_005 | SMB_MONTHLY | member | **True** |\n| seat_006 | SMB_MONTHLY | member | **True** |\n| seat_007 | SMB_MONTHLY | member | False |\n| seat_008 | SMB_MONTHLY | member | False |\n| seat_009 | SMB_MONTHLY | member | False |\n| seat_010 | PRO_ANNUAL | member | **True** |\n| seat_011 | PRO_ANNUAL | member | **True** |\n| seat_012 | PRO_ANNUAL | member | False |\n| seat_013 | PRO_ANNUAL | member | **True** |\n| seat_014 | PRO_ANNUAL | member | **True** |\n| seat_015 | PRO_ANNUAL | member | False |\n| seat_016 | ENT_ANNUAL_V2 | member | False |\n| seat_018 | SMB_MONTHLY | member | False |\n| seat_019 | SMB_MONTHLY | member | **True** |\n| seat_020 | SMB_MONTHLY | member | **True** |\n\n---\n\n### Result\n\n> **8 seats are currently at-risk**\n> (seat_005, seat_006, seat_010, seat_011, seat_013, seat_014, seat_019, seat_020)",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq03",
+    "question": "Does a 45-second login session reset the at-risk clock for a seat?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Short Answer: **No**\n\nA 45-second login session **does not** reset the at-risk clock for a seat, based on the data.\n\n---\n\n## Evidence\n\nLooking at the relevant record in `fact_activity`:\n\n| seat_sk | activity_type | occurred_at | session_duration_seconds | is_valid_login |\n|---|---|---|---|---|\n| 5836522797845583808 | login | 2026-05-25 | **45** | **False** |\n\nThe key field is **`is_valid_login = False`** \u2014 this 45-second session was explicitly flagged as an **invalid login**.\n\nCompare it to the same seat's other login:\n\n| seat_sk | activity_type | occurred_at | session_duration_seconds | is_valid_login |\n|---|---|---|---|---|\n| 5836522797845583808 | login | 2026-05-06 | 500 | **True** |\n\n---\n\n## Interpretation\n\nThe data suggests the system uses `is_valid_login` as the gate for resetting at-risk status. A very short session (45 seconds) results in `is_valid_login = False`, meaning:\n\n- It **won't count** as meaningful engagement\n- It **won't reset** the at-risk clock\n- The seat remains at risk despite technically having a login event recorded\n\n> A minimum session duration threshold likely exists (somewhere **above 45 seconds**) before a login is considered valid engagement.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq03",
+    "question": "Does a 45-second login session reset the at-risk clock for a seat?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Short Answer: **No** \u2014 a 45-second login does not reset the at-risk clock.\n\n---\n\n### What the Data Shows\n\nLooking at the specific event in `fact_activity`:\n\n| seat_sk | activity_type | occurred_at | session_duration_seconds | is_valid_login |\n|---|---|---|---|---|\n| 5836522797845583808 | login | 2026-05-25 | **45** | **False** |\n\nThe key field is **`is_valid_login = False`**.\n\n---\n\n### Why It Doesn't Count\n\n```\nis_valid_login = False  \u2192  the session is not recognized as a genuine engagement\n```\n\nThe `is_valid_login` flag is precisely the mechanism that distinguishes **meaningful activity** from noise like:\n- Bot probes / automated pings\n- Timed-out or immediately-abandoned sessions\n- Failed authentication attempts that technically \"completed\"\n\nA 45-second session that resolves to `is_valid_login = False` would be **excluded** from any at-risk reset logic that filters on `WHERE is_valid_login = True`.\n\n---\n\n### Contrast With Valid Sessions\n\nThe **same seat** (`5836522797845583808`) has a legitimate prior login:\n\n| occurred_at | session_duration_seconds | is_valid_login |\n|---|---|---|\n| 2026-05-06 | 500 | **True** |\n\nThat earlier session *would* count. The 45-second one on May 25 does not override or reset anything \u2014 it is effectively noise in the activity log.\n\n---\n\n### Bottom Line\n\n> The `is_valid_login` flag acts as the **quality gate**. A 45-second session that fails it is discarded from engagement calculations, so the seat's at-risk status remains unchanged.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq03",
+    "question": "Does a 45-second login session reset the at-risk clock for a seat?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "**No, a 45-second login session does not reset the at-risk clock.**\n\nAccording to the business rules in the ontology:\n\n> A login only counts as valid if `session_duration_seconds > 120`. Sessions of 120 seconds or less are ignored when computing login recency.\n\nAt 45 seconds, that session falls well below the 120-second threshold, so it is treated as **invalid** and excluded from the at-risk calculation entirely.\n\n---\n\nYou can see a concrete example of this in the data. `fact_activity` contains this row:\n\n| seat_sk | activity_type | occurred_at | session_duration_seconds | is_valid_login |\n|---|---|---|---|---|\n| 5836522797845583808 | login | 2026-05-25 | 45 | **False** |\n\nThe `is_valid_login = False` flag confirms it. That seat's last *valid* login is actually the earlier entry on **2026-05-06** (500 seconds), so the 45-second attempt on May 25th provides no protection against being flagged as at-risk.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq04",
+    "question": "An account has 55% of its seats at-risk. Is it churned?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Not Necessarily \u2014 At-Risk \u2260 Churned\n\nBased on the data available, **having 55% of seats flagged as `is_at_risk = True` does not mean the account has churned.** Here's why:\n\n### What the Data Shows\n- `is_at_risk` is a **predictive/warning signal** on `dim_seat`, indicating seats that *may* churn\n- **Churn status** would be reflected in `dim_account` via:\n  - `status` (e.g., `active` vs. cancelled/churned)\n  - `account_type`\n  - `reactivated_at` (implies a prior churn)\n\n### The Account is Still Active Until `status` Changes\nAn account with 55% at-risk seats could be:\n| State | Meaning |\n|---|---|\n| \u26a0\ufe0f **High churn risk** | Needs immediate intervention |\n| \u2705 **Still active** | Paying, not yet churned |\n| \u274c **Churned** | Only if `status \u2260 active` |\n\n### Bottom Line\n> **At-risk = a churn *warning*. Churned = a confirmed churn *outcome*.**\n\nThe account is a strong candidate for proactive outreach, but you'd need to confirm `status = churned/cancelled` in `dim_account` before classifying it as churned.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq04",
+    "question": "An account has 55% of its seats at-risk. Is it churned?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Not Necessarily \u2014 55% At-Risk \u2260 Churned\n\n**\"At-risk\" and \"churned\" are distinct states** in this data model.\n\n### What the data tells us:\n- **`is_at_risk`** (on `dim_seat`) flags individual seats showing warning signals \u2014 it's a **leading indicator**\n- **`status`** (on `dim_account`) is the authoritative field for churn \u2014 a churned account would show `status = 'churned'` (or similar inactive status)\n\n### Current account statuses in the data:\n| Status | Count |\n|--------|-------|\n| `active` | 8 |\n| `churned` | 0 |\n\n**All accounts are currently `active`**, regardless of their seat-level risk distribution.\n\n---\n\n### The nuanced answer:\n\n| Condition | Meaning |\n|-----------|---------|\n| 55% seats `is_at_risk = True` | \u26a0\ufe0f **High churn risk signal** \u2014 warrants urgent attention |\n| `dim_account.status = 'active'` | \u2705 **Not yet churned** |\n| `account_type = 'recovered'` | Historical churn + return is possible |\n\n### Bottom line:\n> An account with 55% at-risk seats is a **serious churn candidate**, but it has **not churned yet**. Churn is only confirmed when `dim_account.status` reflects an inactive/churned state.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq04",
+    "question": "An account has 55% of its seats at-risk. Is it churned?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "**No, it is not churned.**\n\nAccording to the ontology's churn definition, an account is marked as **churned** only when **both** of the following conditions are met:\n\n1. **\u2265 60% of its paid seats are at-risk** (excluding `SMB_MONTHLY_LEGACY` and `admin` seats)\n2. That threshold has been sustained for **3 consecutive weeks**\n\nAt **55% of seats at-risk**, the account **fails the first condition** \u2014 it hasn't crossed the 60% threshold. So regardless of how long that level has persisted, it would **not** be classified as churned.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq05",
+    "question": "Account acc_004 has been above the at-risk threshold for 2 weeks. Is it churned?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Account acc_004 Status\n\n**No, acc_004 (Delta Co) is not churned** \u2014 it is still **active**.\n\nHowever, the at-risk signal is concerning. Here's what the data shows:\n\n### Account Overview\n| Field | Value |\n|---|---|\n| **Company** | Delta Co |\n| **Plan** | PRO_ANNUAL |\n| **Status** | Active |\n| **Account Type** | Active |\n\n### Seat-Level Risk (acc_004's seats)\n| Seat | Role | At Risk |\n|---|---|---|\n| seat_010 | member | \u2705 Yes |\n| seat_011 | member | \u2705 Yes |\n| seat_012 | member | \u274c No |\n\n**2 out of 3 seats (67%)** are flagged as at-risk.\n\n---\n\n### Key Takeaway\nWhile acc_004 has **not churned**, the combination of:\n- A majority of seats flagged at-risk\n- 2+ weeks above the threshold\n\n...makes this account a **high-priority retention target**. Given it's on a **PRO_ANNUAL** plan, proactive outreach (CSM check-in, usage review, renewal conversation) would be strongly advisable before the risk compounds further.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq05",
+    "question": "Account acc_004 has been above the at-risk threshold for 2 weeks. Is it churned?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Account acc_004 Status Assessment\n\n**No, acc_004 (Delta Co) has not churned** \u2014 but it shows meaningful churn risk signals.\n\n---\n\n### What the Data Shows\n\n| Attribute | Value |\n|---|---|\n| **Company** | Delta Co |\n| **Plan** | PRO_ANNUAL |\n| **Status** | active |\n| **Account Type** | active |\n| **Reactivated** | Never |\n\n**Seats (acc_004 maps to account_sk `5524556371472755810`):**\n\n| Seat | Is At Risk |\n|---|---|\n| seat_010 | \u2705 True |\n| seat_011 | \u2705 True |\n| seat_012 | \u274c False |\n\n**2 out of 3 seats** are flagged as at-risk.\n\n---\n\n### Key Distinction\n\n> \u26a0\ufe0f **\"At risk\" \u2260 \"Churned\"**\n\nThe data confirms:\n- The account **status is still `active`** \u2014 no churn event has been recorded\n- Being above the at-risk threshold for 2 weeks is a **leading indicator**, not a churn confirmation\n- At-risk flags reflect **engagement/usage concerns**, but the account remains a paying customer\n\n---\n\n### Recommendation\n\nGiven 2 weeks above threshold on a **PRO_ANNUAL** plan, this warrants **immediate CSM outreach** \u2014 annual contracts represent higher ACV and a churn event here would be a significant loss. The window to intervene is likely still open.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq05",
+    "question": "Account acc_004 has been above the at-risk threshold for 2 weeks. Is it churned?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## No, acc_004 (Delta Co) is not yet churned.\n\n### Why not?\n\nThe churn rule requires **both** conditions to be met simultaneously:\n\n| Requirement | Threshold | Current Status |\n|---|---|---|\n| \u2265 60% of paid seats at-risk | 60% | \u2705 Met |\n| Duration of above-threshold state | **3 consecutive weeks** | \u274c Only 2 weeks |\n\nBoth conditions must be satisfied together. Being above the 60% at-risk threshold for only **2 weeks** falls one week short of the required 3-week consecutive period.\n\n---\n\n### At-risk seat breakdown for acc_004\n\nDelta Co is on **PRO_ANNUAL**, so all seats are paid and eligible for at-risk scoring (no `SMB_MONTHLY_LEGACY` or `admin` seats to exclude).\n\n| Seat | Is At-Risk |\n|---|---|\n| seat_010 | \u2705 Yes |\n| seat_011 | \u2705 Yes |\n| seat_012 | \u274c No |\n\nThat's **2 out of 3 seats at-risk = 66.7%**, which does exceed the 60% threshold \u2014 but the account still needs to sustain that state for **one more consecutive week** before it would be classified as churned.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq06",
+    "question": "Should SMB_MONTHLY_LEGACY seats appear in the weekly churn report?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## SMB_MONTHLY_LEGACY Seats in Weekly Churn Reports\n\nBased on the data, there's a strong case that **SMB_MONTHLY_LEGACY seats should be excluded** from the weekly churn report. Here's why:\n\n---\n\n### Key Observations\n\n| Factor | SMB_MONTHLY | SMB_MONTHLY_LEGACY |\n|---|---|---|\n| `is_at_risk` populated? | \u2705 Yes (True/False) | \u274c No (`<NA>`) |\n| Activity in `fact_activity`? | \u2705 Yes | \u274c None |\n| Seats affected | seat_001\u2013009, etc. | seat_003, seat_004, seat_021, seat_022, seat_023 |\n\n---\n\n### Reasoning\n\n1. **`is_at_risk` is `<NA>`** for all LEGACY seats \u2014 the churn risk signal that drives the weekly report is simply **not calculated** for these seats, suggesting they are outside the scoring pipeline.\n\n2. **No activity data** exists for any LEGACY seats in `fact_activity`, making it impossible to assess engagement-based churn risk.\n\n3. The `_LEGACY` suffix strongly implies these are a **deprecated plan type** that likely follows different retention rules or billing cycles.\n\n---\n\n### Recommendation\n\n> \u274c **Exclude SMB_MONTHLY_LEGACY seats** from the standard weekly churn report until `is_at_risk` scoring is implemented for them, or handle them in a **separate legacy churn view**.\n\nWould you like help defining the filter logic or a separate tracking approach for these seats?",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq06",
+    "question": "Should SMB_MONTHLY_LEGACY seats appear in the weekly churn report?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## SMB_MONTHLY_LEGACY Seats in the Weekly Churn Report\n\n**Short answer: No** \u2014 and the data already reflects this.\n\n---\n\n### What the Data Shows\n\nLooking at `dim_seat`, all `SMB_MONTHLY_LEGACY` seats have `is_at_risk = <NA>` (null), not `True` or `False`:\n\n| seat_id | plan_type | is_at_risk |\n|---|---|---|\n| seat_003 | SMB_MONTHLY_LEGACY | `<NA>` |\n| seat_004 | SMB_MONTHLY_LEGACY | `<NA>` |\n| seat_021 | SMB_MONTHLY_LEGACY | `<NA>` |\n| seat_022 | SMB_MONTHLY_LEGACY | `<NA>` |\n| seat_023 | SMB_MONTHLY_LEGACY | `<NA>` |\n\nThe `is_at_risk` field is **not being populated** for this plan type, which suggests the churn risk scoring pipeline either **doesn't cover** or **explicitly excludes** legacy plans.\n\n---\n\n### Recommendation\n\nExclude `SMB_MONTHLY_LEGACY` seats from the weekly churn report **unless** a deliberate decision is made to include them, because:\n\n1. **`is_at_risk` is null** \u2014 no risk signal exists to report on\n2. **Legacy plans likely have different churn dynamics** \u2014 mixing them with standard plans could skew risk metrics\n3. **Reporting on nulls could be misleading** \u2014 they'd appear as neither at-risk nor safe\n\nIf there is a business need to track churn for legacy seats, the scoring pipeline should be updated to explicitly evaluate and populate `is_at_risk` for `SMB_MONTHLY_LEGACY` before including them.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq06",
+    "question": "Should SMB_MONTHLY_LEGACY seats appear in the weekly churn report?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "No. **`SMB_MONTHLY_LEGACY` seats are explicitly excluded from at-risk calculation entirely** \u2014 they do not appear in churn reports and do not count toward account churn scores.\n\nThis means:\n\n- They are **not evaluated** for the at-risk flag (`is_at_risk`)\n- They are **not counted** in the 60% paid-seat threshold used to determine whether an account is churned\n- They have no influence on account-level churn status\n\nThis applies regardless of how active or inactive those seats are.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq07",
+    "question": "When does an ENT_ANNUAL_V2 seat become at-risk due to login inactivity?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the data provided, I **cannot determine** the specific inactivity threshold that triggers the `is_at_risk = True` flag for `ENT_ANNUAL_V2` seats.\n\nHere's what the data actually shows:\n\n### ENT_ANNUAL_V2 Seats (acc_006 / Foxtrot Ent)\n| seat_id | role | is_at_risk |\n|---------|------|------------|\n| seat_016 | member | False |\n| seat_017 | admin | `<NA>` |\n\n- **Neither seat is marked at-risk**, so there's no at-risk example in this plan tier to reverse-engineer a threshold from.\n- Admin seats appear to have `<NA>` for `is_at_risk` across all plan types, suggesting the flag may **not apply to admins** regardless of plan.\n\n### To answer this definitively, you would need:\n- The **business logic or rule definition** (e.g., from a dbt model, product spec, or engineering docs) that defines what inactivity period sets `is_at_risk = True`\n- Or **more data** showing ENT_ANNUAL_V2 seats that *have* been flagged at-risk alongside their last login dates\n\nWould you like me to analyze the at-risk patterns from other plan types (e.g., SMB_MONTHLY or PRO_ANNUAL) where at-risk examples do exist?",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq07",
+    "question": "When does an ENT_ANNUAL_V2 seat become at-risk due to login inactivity?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## ENT_ANNUAL_V2 At-Risk Login Inactivity Threshold\n\nBased on the available data, I **cannot determine a specific inactivity threshold** for ENT_ANNUAL_V2 seats becoming at-risk. Here's why:\n\n### What the Data Shows\nLooking at the **only ENT_ANNUAL_V2 seats** in `dim_seat`:\n\n| source_id | plan_type     | role   | is_at_risk |\n|-----------|---------------|--------|------------|\n| seat_016  | ENT_ANNUAL_V2 | member | False      |\n| seat_017  | ENT_ANNUAL_V2 | admin  | `<NA>`     |\n\n- **Neither seat is flagged as at-risk**, so there's no at-risk ENT example to reverse-engineer a threshold from\n- The `is_at_risk` field for the admin seat (seat_017) is `<NA>`, suggesting **admins may be excluded** from at-risk evaluation entirely\n- The schema defines `is_at_risk` as a **boolean on the seat dimension**, but contains **no documented business rule or threshold logic**\n\n### What Would Be Needed to Answer This\n- Business rule documentation (e.g., *\"flagged after X days without a valid login\"*)\n- Historical snapshots of `is_at_risk` changes alongside login timestamps\n- A transformation or dbt model defining the at-risk logic\n\n### Recommendation\n> The at-risk classification rules are **not derivable from the data provided**. You'd need to consult the **pipeline/ETL logic** that populates `is_at_risk` in `dim_seat` to find the exact threshold per plan type.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq07",
+    "question": "When does an ENT_ANNUAL_V2 seat become at-risk due to login inactivity?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the ontology, an **ENT_ANNUAL_V2** seat becomes at-risk due to login inactivity when **both** of the following conditions are true:\n\n1. **No valid login in the last 21 days** \u2014 ENT_ANNUAL_V2 uses a 21-day window instead of the standard 14-day window. A login only counts as valid if `session_duration_seconds > 120`; sessions of 120 seconds or less are ignored.\n2. **No API call in the last 7 days** \u2014 this condition is the same as for all other eligible plan types.\n\nBoth conditions must be met simultaneously (AND logic) for the seat to be flagged as at-risk. Additionally, this only applies to seats with `role = 'member'` (or non-admin roles) \u2014 admin seats are excluded from at-risk calculation entirely regardless of activity.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq08",
+    "question": "If an account churns and resubscribes 45 days later, how should it be classified?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Reactivated Account Classification\n\nBased on the data model, this scenario should be classified as a **\"recovered\" account type**.\n\n### Evidence from the Schema\n\nLooking at `dim_account`, the `account_type` field has (at least) two observed values:\n\n| account_type | Example |\n|---|---|\n| `active` | Most accounts (acc_001 through acc_006, acc_008) |\n| `recovered` | **acc_007 (Golf Tech)** \u2014 which also has a non-null `reactivated_at` timestamp |\n\n### Key Indicators for \"Recovered\" Classification\n\nAn account should be flagged as `recovered` when **both** conditions are met:\n\n1. **`account_type = 'recovered'`** \u2014 distinguishes it from a standard new or continuous subscription\n2. **`reactivated_at` is populated** \u2014 timestamps when the resubscription occurred (e.g., Golf Tech reactivated on `2026-05-11`)\n\n### Important Caveat\n\nThe data doesn't explicitly define a **minimum gap threshold** for the \"recovered\" classification. The **45-day gap** you describe *would likely qualify*, but the exact cutoff rule isn't visible in this dataset alone \u2014 that business logic would need to be confirmed from the subscription/billing source system.\n\n> In short: churn + resubscribe \u2192 `account_type = 'recovered'` with `reactivated_at` set to the resubscription date.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq08",
+    "question": "If an account churns and resubscribes 45 days later, how should it be classified?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Account Reactivation Classification\n\nBased on the data model, an account that churns and resubscribes **45 days later** should be classified as a **\"recovered\"** account type.\n\n### Evidence from the Schema & Data\n\nThe `dim_account` table has an **`account_type`** field and a **`reactivated_at`** timestamp, which together capture this exact scenario:\n\n| Field | Churned + Resubscribed Account |\n|---|---|\n| `account_type` | `\"recovered\"` |\n| `reactivated_at` | *(timestamp of resubscription)* |\n| `status` | `\"active\"` |\n\n### Real Example in the Data\n\n**acc_007 (Golf Tech)** demonstrates this pattern:\n\n```\nsource_id      : acc_007\ncompany        : Golf Tech\nplan           : SMB_MONTHLY\nstatus         : active\naccount_type   : recovered        \u2190 classified as recovered\nreactivated_at : 2026-05-11       \u2190 resubscription date is populated\n```\n\nAll other active accounts have `account_type = \"active\"` and `reactivated_at = NaT`, confirming that `\"recovered\"` is **specifically reserved** for churn-and-resubscribe cases.\n\n### Key Distinction\n| Scenario | `account_type` | `reactivated_at` |\n|---|---|---|\n| Never churned | `active` | null |\n| Churned \u2192 resubscribed | `recovered` | populated |\n\n> The 45-day gap itself doesn't change the classification \u2014 any resubscription after a churn event would be tagged as `\"recovered\"` regardless of the gap length, as long as `reactivated_at` is populated.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq08",
+    "question": "If an account churns and resubscribes 45 days later, how should it be classified?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Account Classification: Reactivation After 45 Days\n\nBased on the ontology's reactivation rules, this account should be classified as **`'new'`**.\n\n---\n\n### Decision Logic\n\nThe ontology defines two reactivation classifications based on the time elapsed between churning and reactivation:\n\n| Condition | Classification |\n|---|---|\n| `reactivated_at` is null | `'active'` or `'churned'` |\n| Reactivated **within 30 days** of churning | `'recovered'` |\n| Reactivated **after 30 days** of churning | **`'new'`** |\n\nSince **45 days exceeds the 30-day recovery window**, the account is treated as a net-new customer rather than a returning one.\n\n---\n\n### Why This Distinction Matters\n\nThe ontology explicitly calls this out as a **cohort integrity concern**:\n\n> *\"Recovered accounts are not the same as new customers.\"*\n\n- **`'recovered'`** accounts are churned customers who came back quickly \u2014 likely retained through win-back efforts, and should **not** inflate new customer counts.\n- **`'new'`** accounts (reactivated after 30 days) are treated as **fresh acquisitions** for cohort and growth reporting purposes.\n\nMisclassifying a 45-day reactivation as `'recovered'` would undercount new customers and distort churn/growth metrics.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq09",
+    "question": "Do admin seats affect an account's churn score?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Admin Seats and Churn Score\n\nBased on the data available, **admin seats are excluded from churn risk calculations**.\n\nHere's what the data shows:\n\n### `is_at_risk` Field in `dim_seat`\n| Role | `is_at_risk` Values |\n|------|-------------------|\n| **member** | `True`, `False`, or `<NA>` (Legacy plans) |\n| **admin** | Always `<NA>` |\n\nSpecifically, the two admin seats in the data:\n- **seat_002** (acc: `3515910092184876369`, SMB_MONTHLY) \u2192 `is_at_risk = <NA>`\n- **seat_017** (acc: `520687226136787178`, ENT_ANNUAL_V2) \u2192 `is_at_risk = <NA>`\n\n### Interpretation\n- The `<NA>` value for admin seats appears **intentional and consistent** \u2014 admins are never flagged as at-risk, unlike member seats which can be `True` or `False`.\n- This suggests the churn scoring logic **only evaluates member seats**, likely because admins have inherently different usage patterns (account management vs. product usage).\n\n### Caveat\nThe data doesn't include an explicit churn score column, so this is inferred from the `is_at_risk` flag. If churn scoring uses a separate model not reflected here, the answer could differ.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq09",
+    "question": "Do admin seats affect an account's churn score?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Admin Seats & Churn Score\n\nBased on the data model and available data, **admin seats are excluded from churn risk scoring**. Here's the evidence:\n\n### Schema Design\nThe `is_at_risk` flag lives on **`dim_seat`**, meaning risk is assessed **at the seat level**, not the account level. An account's churn exposure is effectively the **aggregate of its at-risk member seats**.\n\n### Data Pattern\nLooking at `dim_seat`, admin seats consistently have **`is_at_risk = <NA>`** (null):\n\n| seat_id | role | is_at_risk |\n|---|---|---|\n| seat_002 | admin | `<NA>` |\n| seat_017 | admin | `<NA>` |\n\nMeanwhile, **member seats** have explicit `True` / `False` values.\n\n### Interpretation\n| Seat Role | is_at_risk Populated? | Contributes to Churn Score? |\n|---|---|---|\n| `member` | \u2705 Yes | \u2705 Yes |\n| `admin` | \u274c Null | \u274c No |\n\n### Likely Rationale\nAdmin seats typically represent **owners or billing contacts** who are structurally tied to the account \u2014 their absence or inactivity is less predictive of churn than that of regular users. The scoring logic appears intentionally scoped to **member engagement**.\n\n---\n\n**Bottom line:** Admin seats do not appear to factor into churn risk scoring. If you want to incorporate admin activity, the `is_at_risk` logic in `dim_seat` would need to be extended to cover the `admin` role.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq09",
+    "question": "Do admin seats affect an account's churn score?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "No. **Admin seats are excluded from at-risk calculations entirely**, regardless of their activity level.\n\nThis means they:\n- Are **not evaluated** for at-risk status\n- **Do not count** toward the 60% at-risk seat threshold used to determine account churn status\n- Have no influence on an account's churn score\n\nOnly **member** (and viewer) seats on paid, non-legacy plans (`SMB_MONTHLY`, `PRO_ANNUAL`, `ENT_ANNUAL_V2`) are considered when scoring an account for churn risk.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq10",
+    "question": "Account acc_008 has 3 SMB_MONTHLY_LEGACY seats and 2 standard seats, both standard seats at-risk. Is it churned?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Analysis of Account acc_008\n\nLet me check the data carefully.\n\n### Account acc_008 Details\nFrom `dim_account`:\n- **Company:** Hotel SaaS\n- **Plan:** SMB_MONTHLY\n- **Status:** active\n- **Account type:** active\n\n### Seats for acc_008\n\nFirst, I need to identify acc_008's `account_sk`. Looking at `dim_seat`, I need to match accounts to their SKs \u2014 but **acc_008 (Hotel SaaS)** maps to account_sk **`8885627468594434478`**, which has only:\n\n| seat_id | plan_type | role | is_at_risk |\n|---------|-----------|------|------------|\n| seat_018 | SMB_MONTHLY | member | False |\n\nThat's **1 seat**, not the 5 seats described in your question.\n\n---\n\n### \u26a0\ufe0f The Premise Doesn't Match the Data\n\nThe scenario you described \u2014 *3 SMB_MONTHLY_LEGACY seats + 2 standard at-risk seats* \u2014 **does not reflect acc_008 in the dataset**. That profile more closely resembles **acc_007 (Golf Tech)**, which has:\n- 3 `SMB_MONTHLY_LEGACY` seats (seat_021, 022, 023)\n- 2 `SMB_MONTHLY` at-risk seats (seat_019, seat_020)\n\n### acc_008 per the Data\n- **1 seat**, not at risk\n- Account status: **active**\n- **Not churned** based on available data\n\nCould you double-check the account ID? It's possible you meant **acc_007**.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq10",
+    "question": "Account acc_008 has 3 SMB_MONTHLY_LEGACY seats and 2 standard seats, both standard seats at-risk. Is it churned?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Checking the Data\n\nLet me look up **acc_008 (Hotel SaaS)** in the tables.\n\n### dim_account\n| source_id | company | plan | status | account_type |\n|---|---|---|---|---|\n| acc_008 | Hotel SaaS | SMB_MONTHLY | **active** | active |\n\n### dim_seat \u2014 finding acc_008's account_sk\n\nLooking at dim_seat, I need to match seats to acc_008. Based on the data provided, **acc_008's seats are not visible in the dim_seat table** \u2014 there are no seats shown belonging to Hotel SaaS's account_sk (`8885627468594434478` maps to seat_018 only, which is 1 SMB_MONTHLY seat).\n\n---\n\n## \u26a0\ufe0f I Cannot Confirm the Premise\n\nThe seat composition you've described \u2014 **3 SMB_MONTHLY_LEGACY seats + 2 standard at-risk seats** \u2014 **does not match what's in the provided data** for acc_008. The data shows only **seat_018** (1 SMB_MONTHLY seat, `is_at_risk = False`) linked to acc_008's account_sk.\n\nAs for churn status: **acc_008 is marked `active`** in dim_account, so it is **not churned** per the current data.\n\nIf you're working from a different or more complete dataset than what's shown here, could you clarify the source? I want to make sure I'm not reasoning from data I don't actually have.",
+    "score": null
+  },
+  {
+    "experiment": "saas_churn",
+    "question_id": "sq10",
+    "question": "Account acc_008 has 3 SMB_MONTHLY_LEGACY seats and 2 standard seats, both standard seats at-risk. Is it churned?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Analysis for Account acc_008 (Hotel SaaS)\n\n### Step 1: Identify the seats\n\nLooking at `dim_seat` for `account_sk` matching acc_008 (sk: `8287331769356759010`):\n\n| Seat | Plan Type | Role | is_at_risk |\n|---|---|---|---|\n| seat_019 | SMB_MONTHLY | member | **True** |\n| seat_020 | SMB_MONTHLY | member | **True** |\n| seat_021 | SMB_MONTHLY_LEGACY | member | \\<NA\\> |\n| seat_022 | SMB_MONTHLY_LEGACY | member | \\<NA\\> |\n| seat_023 | SMB_MONTHLY_LEGACY | member | \\<NA\\> |\n\n---\n\n### Step 2: Apply exclusion rules\n\nPer the ontology:\n- **`SMB_MONTHLY_LEGACY` seats are excluded** from churn calculations entirely\n- **`admin` seats are excluded** (none here anyway)\n\nThis leaves only the **2 standard SMB_MONTHLY seats** (seat_019, seat_020) as the **paid seat pool** for churn scoring.\n\n---\n\n### Step 3: Apply the churn threshold\n\n> An account is churned when **\u2265 60% of paid seats** are at-risk for **3 consecutive weeks**\n\n| Metric | Value |\n|---|---|\n| Eligible paid seats | 2 |\n| At-risk seats | 2 |\n| At-risk % | **100%** \u2705 (exceeds 60%) |\n\nThe **60% threshold is met**, but churn requires this condition to hold for **3 consecutive weeks** \u2014 that is a duration check, not just a point-in-time snapshot.\n\n---\n\n### Conclusion\n\n> **Not definitively churned yet** \u2014 based on the available data.\n\nThe at-risk ratio (100%) clears the 60% threshold, but **we have no temporal evidence** that both seats have been continuously at-risk for 3 consecutive weeks. The `is_at_risk` flag reflects the current state only. Without a weekly history of at-risk status, the 3-week duration requirement **cannot be confirmed**, and churn status should not be set to churned.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq01",
+    "question": "How many serious adverse events have been reported for Ozempic?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the dataset, **Ozempic** is a brand name for **semaglutide**. The total number of serious adverse events reported for semaglutide (including Ozempic and other name variants like Wegovy and Rybelsus) is:\n\n## 5,186 serious adverse events\n\nThis represents approximately **78.4%** of the total 6,618 adverse events reported for semaglutide being classified as serious.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq01",
+    "question": "How many serious adverse events have been reported for Ozempic?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the dataset, **semaglutide** (which includes Ozempic as one of its brand name variants) has had **5,186 serious adverse events** reported.\n\n> **Note:** The data is aggregated at the canonical drug level (semaglutide), meaning this figure encompasses all reported name variants for the drug, including **OZEMPIC**, **WEGOVY**, **RYBELSUS**, and others \u2014 not just those explicitly reported under the \"Ozempic\" brand name.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq01",
+    "question": "How many serious adverse events have been reported for Ozempic?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Serious Adverse Events for Ozempic (Semaglutide)\n\n**5,186 serious adverse events** have been reported for Ozempic.\n\n### How this resolves:\n- **\"Ozempic\"** is a brand name that maps to the canonical drug **semaglutide** (`canonical_drug_id = 'semaglutide'`)\n- The `serious_event_count` field reflects FDA's **statutory definition** of a serious adverse event \u2014 not simply a \"severe\" reaction. An event is counted as serious if it results in:\n  - Death\n  - Inpatient hospitalization\n  - Life-threatening reaction\n  - Persistent disability\n  - Congenital anomaly\n  - Required medical intervention to prevent permanent impairment\n\n### Summary stats for Semaglutide:\n| Metric | Count |\n|---|---|\n| Total adverse events | 6,618 |\n| **Serious adverse events** | **5,186** |\n| Serious event rate | ~78.4% |\n\n> **Note:** Total events are capped at 25,000 per drug due to the OpenFDA API hard limit, though semaglutide's total (6,618) is well below that cap.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq02",
+    "question": "What is a 'serious' adverse event in this dataset?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Definition of a 'Serious' Adverse Event\n\nBased on the dataset structure, there is a **`serious_event_count`** field in the `dim_drug` table that is distinguished from the overall **`total_event_count`**, but the dataset schema provided here **does not explicitly define** what criteria classify an event as \"serious.\"\n\nHowever, in the context of **FDA adverse event reporting (FAERS)** \u2014 which this dataset appears to be derived from \u2014 a serious adverse event is typically defined as one that results in any of the following outcomes:\n\n- **Death**\n- **Life-threatening condition**\n- **Hospitalization** (initial or prolonged)\n- **Disability or permanent damage**\n- **Congenital anomaly/birth defect**\n- **Required intervention** to prevent permanent impairment\n- **Other serious important medical events**\n\n### From the Data We Can Observe:\nThe serious event counts are notably high as a proportion of total events, for example:\n- **Aspirin**: 22,945 serious out of 25,000 total (~**91.8%**)\n- **Acetaminophen**: 18,994 serious out of 25,000 total (~**76.0%**)\n\nTo get the **precise definition used in this specific dataset**, the underlying data documentation or codebook would need to be consulted.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq02",
+    "question": "What is a 'serious' adverse event in this dataset?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the dataset provided, **the exact definition of \"serious\" adverse event is not explicitly documented** in the schema or the sample data shown.\n\nHowever, based on standard FDA/pharmacovigilance conventions (since this appears to be **FDA Adverse Event Reporting System (FAERS)**-style data), a \"serious\" adverse event typically meets **one or more** of the following criteria:\n\n- \u2620\ufe0f **Death**\n- \ud83c\udfe5 **Hospitalization** (initial or prolonged)\n- \u26a0\ufe0f **Life-threatening** condition\n- \ud83e\uddbd **Disability or permanent damage**\n- \ud83d\udc76 **Congenital anomaly/birth defect**\n- \ud83d\udea8 **Required intervention** to prevent permanent impairment\n\n---\n\n### What the dataset *does* tell us:\nThe `dim_drug` table tracks two counts:\n| Field | Description |\n|---|---|\n| `total_event_count` | All reported adverse events |\n| `serious_event_count` | Subset flagged as \"serious\" |\n\nFor example, **acetylsalicylic acid (aspirin)** has **22,945 serious out of 25,000 total** (~91.8%), suggesting a high serious event rate.\n\n---\n\n> To get the precise definition used in *this specific dataset*, you would need to consult the **source pipeline documentation** (`source_pipeline` field) or the originating data source.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq02",
+    "question": "What is a 'serious' adverse event in this dataset?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the ontology, a **\"serious\" adverse event** in this dataset follows the **FDA statutory definition** \u2014 it is an adverse event that results in one or more of the following:\n\n- **Death**\n- **Inpatient hospitalization**\n- **Life-threatening reaction**\n- **Persistent disability**\n- **Congenital anomaly**\n- **Required medical intervention to prevent permanent impairment**\n\nThis is captured in the `serious_event_count` field, which counts rows where `serious = 1` in the adverse events data.\n\n---\n\n### \u26a0\ufe0f Important semantic note\n\nThe ontology explicitly flags a known failure mode:\n\n> **\"Serious\" \u2260 \"severe,\" \"high severity,\" or \"bad reaction.\"**\n\nThe field uses the **legal FDA definition**, not a clinical severity rating. An event can be medically serious (e.g., a hospitalization for a mild allergic reaction) without being \"severe\" in colloquial terms, and vice versa. LLMs without this ontology are noted to default to interpreting \"serious\" as severity \u2014 which would be incorrect for this dataset.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq03",
+    "question": "Why does acetylsalicylic acid show generic_name = 'ASPIRIN' in this dataset?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Why `generic_name = 'ASPIRIN'` for Acetylsalicylic Acid\n\nThis is essentially a **data/labeling convention issue** rather than a scientific one. Here are the likely reasons:\n\n### 1. **Common Usage in FDA Labeling**\nThe FDA and drug manufacturers frequently use **\"Aspirin\"** as the established name on product labels in the United States, even though the technically precise International Nonproprietary Name (INN) is **acetylsalicylic acid**. The `generic_name` field here likely reflects what appears on the **drug label or package insert**.\n\n### 2. **\"Aspirin\" is Treated as a Generic Name in the US**\nUnlike in some other countries where \"Aspirin\" remains a **Bayer trademark**, in the **United States** (and several other countries), \"aspirin\" has become a **genericized trademark** \u2014 it lost trademark protection and is now considered a common/generic name for the drug.\n\n### 3. **Dataset Design Choice**\n- The `canonical_drug_id` = `acetylsalicylic acid` (the chemically precise name)\n- The `generic_name` = `ASPIRIN` (the commonly used label name)\n- This split suggests the dataset uses `canonical_drug_id` for **scientific precision** and `generic_name` for **practical/label recognition**\n\n### 4. **Confirmed by Name Variants**\nThe `dim_drug_name_variants` table supports this \u2014 it includes both `\"ASPIRIN\"` and `\"ACETYLSALICYLIC ACID\"` as reported variants, showing the dataset recognizes **both names refer to the same drug**.\n\n---\n\n**In short:** \"Aspirin\" is the de facto generic name used on U.S. drug labels, so it appears in the `generic_name` field, while `acetylsalicylic acid` serves as the more chemically precise canonical identifier.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq03",
+    "question": "Why does acetylsalicylic acid show generic_name = 'ASPIRIN' in this dataset?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Why `generic_name = 'ASPIRIN'` for Acetylsalicylic Acid\n\nThis is likely due to how the **source data pipeline populated the `generic_name` field**. Here are the most probable reasons:\n\n### 1. **Brand/Common Name Used Instead of INN**\n- \"Aspirin\" is the most widely recognized common name for acetylsalicylic acid, and many drug databases (including FDA labeling systems) use \"ASPIRIN\" as the primary label rather than the full chemical name \"ACETYLSALICYLIC ACID.\"\n- The pipeline likely pulled `generic_name` from an FDA drug label or structured product labeling (SPL) where the drug is listed under **\"ASPIRIN\"** as the established name.\n\n### 2. **\"Aspirin\" is Technically a Generic Name in the US**\n- Unlike some countries where \"Aspirin\" remains a trademarked brand name (e.g., Bayer in Germany), **in the United States \"aspirin\" is a generic/common name** \u2014 not a brand. So populating `generic_name = 'ASPIRIN'` is technically correct in a US regulatory context.\n\n### 3. **`canonical_drug_id` vs. `generic_name` Serve Different Purposes**\n| Field | Value | Purpose |\n|---|---|---|\n| `canonical_drug_id` | `acetylsalicylic acid` | Chemical/INN identity for deduplication |\n| `generic_name` | `ASPIRIN` | How the drug appears in source labeling |\n\nThe `canonical_drug_id` correctly uses the **INN (International Nonproprietary Name)**, while `generic_name` reflects the **FDA label display name**.\n\n### 4. **Supporting Evidence from `dim_drug_name_variants`**\nThe name variants table confirms both names are in use \u2014 `\"ASPIRIN\"` and `\"ACETYLSALICYLIC ACID\"` both appear as `reported_name` variants, meaning the pipeline recognized them as the same drug but chose `ASPIRIN` as the display generic name from the source label.\n\n---\n\n**In short:** It's not an error \u2014 \"ASPIRIN\" is the FDA-recognized generic name in the US, and the `canonical_drug_id = 'acetylsalicylic acid'` preserves the INN for cross-reference and deduplication purposes.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq03",
+    "question": "Why does acetylsalicylic acid show generic_name = 'ASPIRIN' in this dataset?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Why `generic_name = 'ASPIRIN'` for acetylsalicylic acid\n\nThis is a documented pipeline artifact explained in the ontology's **Semantic Gaps** section.\n\n### The core reason: OpenFDA doesn't index by IUPAC name\n\nOpenFDA's drug labels API does not recognize `\"acetylsalicylic acid\"` as a valid query term \u2014 it indexes this drug under `\"aspirin\"`. So the ingestion pipeline had to query the labels API using `aspirin`, not the canonical drug's IUPAC name.\n\n### What the pipeline does to handle this\n\nA **`LABEL_QUERY_ALIAS`** is applied at ingestion time:\n\n| Ingestion step | Value |\n|---|---|\n| Labels API query term | `\"aspirin\"` (what OpenFDA understands) |\n| `_drug_query` tag applied to the record | `\"acetylsalicylic acid\"` (the canonical drug ID) |\n| `generic_name` returned by OpenFDA | `\"ASPIRIN\"` (what the label actually says) |\n\nThe alias lets the labels join consistently with the adverse events side (which is also tagged `_drug_query = \"acetylsalicylic acid\"`), while the `generic_name` field simply reflects whatever OpenFDA returned from the label \u2014 which is `ASPIRIN`.\n\n### Why this matters for LLMs\n\nWithout this ontology, an LLM might:\n- Fail to recognize that `acetylsalicylic acid` and `ASPIRIN` are the **same entity** in this dataset\n- Think there's a data quality error rather than an intentional alias\n- Incorrectly treat them as two separate drugs when querying\n\nThe ontology explicitly documents that `acetylsalicylic acid` \u2192 `aspirin` is a **known, intentional mapping** \u2014 not a mistake.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq04",
+    "question": "What are the approved indications for Tylenol?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the dataset, **Tylenol (Acetaminophen)** is approved for the following indications:\n\n1. **Management of mild to moderate pain** in adult and pediatric patients **2 years and older**\n\n2. **Management of moderate to severe pain** (with adjunctive opioid analgesics) in adult and pediatric patients **2 years and older**\n\n3. **Reduction of fever** in adult and pediatric patients\n\n> *Note: Tylenol is a brand name variant of the canonical drug **Acetaminophen**, as confirmed in the drug name variants data.*",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq04",
+    "question": "What are the approved indications for Tylenol?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the dataset, **Tylenol (Acetaminophen)** is approved for the following indications:\n\n1. **Mild to Moderate Pain Management** \u2013 For adult and pediatric patients **2 years and older**\n\n2. **Moderate to Severe Pain Management** \u2013 Used **adjunctively with opioid analgesics** in adult and pediatric patients 2 years and older\n\n3. **Fever Reduction** \u2013 (indicated in the label, though the full text is truncated in the dataset)\n\n> \u26a0\ufe0f *Note: The indications listed here are based on the **injectable formulation** of Acetaminophen, as referenced in the dataset. Other formulations (e.g., oral tablets like standard Tylenol) may have a broader or slightly different label.*",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq04",
+    "question": "What are the approved indications for Tylenol?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Approved Indications for Tylenol (Acetaminophen)\n\nBased on this dataset, the approved indications for **Tylenol** (canonical drug: **acetaminophen**) are:\n\n1. **Management of mild to moderate pain** in adult and pediatric patients **2 years and older**\n2. **Management of moderate to severe pain** with adjunctive opioid analgesics in adult and pediatric patients **2 years and older**\n3. **Reduction of fever**\n\n---\n\n### \u26a0\ufe0f Important Context\n\nThe indications above reflect an **Rx/IV injection label** (such as Caldolor or Ofirmev) \u2014 **not** the consumer Tylenol OTC product. This is a known data gap in this dataset: OpenFDA returns all label records for a given generic name, and the ingestion pipeline captured an intravenous formulation label rather than the standard over-the-counter Tylenol label.\n\nIn practice, **consumer Tylenol** is indicated for:\n- Temporary relief of minor aches and pains\n- Reduction of fever\n\nBut those OTC indications are **not what is stored in this CDM** for acetaminophen.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq05",
+    "question": "What warnings exist for acetylsalicylic acid?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the dataset, the warnings for **acetylsalicylic acid (Aspirin)** include:\n\n1. **Increased Bleeding Risk** \u2013 Aspirin and extended-release dipyridamole capsules increases the risk of bleeding.\n\n2. **Hepatic/Renal Insufficiency** \u2013 Avoid use in patients with **severe hepatic or renal insufficiency**.\n\n3. **Pre-surgical Interruption** \u2013 Interrupt aspirin and extended-release dipyridamole capsules **48 hours before** using intravenous dipyridamole.\n\n> \u26a0\ufe0f *Note: The warnings text in the dataset appears to be truncated, so there may be additional warnings not fully captured here. Always refer to the full prescribing information for a complete list of warnings and precautions.*",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq05",
+    "question": "What warnings exist for acetylsalicylic acid?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the dataset, the warnings for **acetylsalicylic acid (Aspirin)** include:\n\n1. **Increased Bleeding Risk** \u2013 Aspirin and extended-release dipyridamole capsules increases the risk of bleeding.\n\n2. **Hepatic Insufficiency** \u2013 Avoid use in patients with severe hepatic insufficiency.\n\n3. **Renal Insufficiency** \u2013 Avoid use in patients with severe renal insufficiency.\n\n4. **Pre-procedural Interruption** \u2013 Interrupt aspirin and extended-release dipyridamole capsules **48 hours before** using intravenous dipyridamole.\n\n> \u26a0\ufe0f *Note: The warnings text in the dataset appears to be truncated, so there may be additional warnings not fully captured here.*",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq05",
+    "question": "What warnings exist for acetylsalicylic acid?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Warnings for Acetylsalicylic Acid (Aspirin)\n\nBased on the dataset, here are the documented warnings for **acetylsalicylic acid** (canonical drug ID: `acetylsalicylic acid`; generic name in OpenFDA: **ASPIRIN**):\n\n---\n\n### Key Warnings\n\n1. **Increased Bleeding Risk**\n   - Aspirin and extended-release dipyridamole capsules increase the risk of bleeding.\n\n2. **Hepatic & Renal Insufficiency**\n   - Avoid use in patients with **severe hepatic or renal insufficiency**.\n\n3. **Pre-procedural Interruption**\n   - Interrupt aspirin and extended-release dipyridamole capsules **48 hours before** using intravenous dipyridamole (e.g., for cardiac stress testing), due to the risk of compounding antiplatelet effects.\n\n---\n\n### Data Source Note\n\n> The warnings shown here are sourced from the **OpenFDA drug label** associated with the query term `acetylsalicylic acid`. Per the ontology, OpenFDA does not index this drug under its IUPAC name \u2014 a `LABEL_QUERY_ALIAS` maps `\"acetylsalicylic acid\"` \u2192 `\"aspirin\"` at ingestion. The label retrieved reflects a **combination product** (aspirin + extended-release dipyridamole), which is one of the label records OpenFDA returns for this query. Additional warnings may apply to other aspirin formulations not captured in this record.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq06",
+    "question": "What names have been used to report Botox in adverse event records?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the dataset, here are the reported name variants used for **Botulinum Toxin (Botox)** in adverse event records (sample of 107 total variants):\n\n### Brand Names\n- **BOTOX** (and variations like \"BOTOX INJECTION\", \"BOTOX INJECTIONS\", \"BOTOX [BOTULINUM TOXIN TYPE A]\")\n- **AZZALURE**\n- **ANTIPAR**\n- **DAXXIFY** (the canonical brand)\n\n### Generic/Scientific Names\n- BOTULINUM TOXIN\n- BOTULINUM TOXIN TYPE A\n- BOTULINUM TOXIN A\n- BOTULINUM TOXIN TYPE B\n- BOTULINUM TOXIN NOS\n- BOTULINIC TOXIN\n- BOTULINIUM TOXIN TYPE B\n\n### Misspellings/Variants\n- BOLUTLINUM TOXIN TYPE A\n- BOTILINUM TOXIN\n- BOTOULINUM TOXIN TYPE A NOS\n- BOTULINIUM\n\n### Blinded/Study Names\n- BLINDED BOTULINUM TOXIN TYPE A - COSMETIC\n- BLINDED BOTULINUM TOXIN TYPE A - GENERAL\n- BLINDED BOTULINUM TOXIN TYPE A - IPSEN\n- BLINDED BOTULINUM TOXIN TYPE A \u2013 NON\u2013HSA\n\n### Other Formats\n- ANTICHOLINERGICS (ANTICHOLINERGICS) ABOBOTULINUM TOXIN A\n- BOTULINUM TOXIN 100 UNITS\n- BOTULINUM TOXIN A 100U\n- BOTULINUM TOXIN A Q3MONTHS\n\nIn total, there are **107 unique name variants** recorded across all adverse event reports.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq06",
+    "question": "What names have been used to report Botox in adverse event records?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the **dim_drug_name_variants** data for **botulinum toxin** (the canonical drug for Botox), here are the reported name variants used in adverse event records:\n\n| # | Reported Name |\n|---|--------------|\n| 1 | BOTOX |\n| 2 | (BOTULINUM TOXIN TYPE A |\n| 3 | ANTICHOLINERGICS (ANTICHOLINERGICS) ABOBOTULINUM TOXIN A |\n| 4 | ANTIPAR (BOTULINUM TOXIN TYPE A) |\n| 5 | AZZALURE (BOTULINUM TOXIN TYE A) (BOTULINUM TOXIN TYPE A) |\n| 6 | AZZALURE (BOTULINUM TOXIN TYPE 1) (BOTULINUM TOXIN TYPE A) ABOBOTULINU |\n| 7 | AZZALURE (BOTULINUM TOXIN TYPE A) (BOTULINUM TOXIN TYPE A) |\n| 8 | BLINDED BOTULINUM TOXIN TYPE A - COSMETIC |\n| 9 | BLINDED BOTULINUM TOXIN TYPE A - GENERAL |\n| 10 | BLINDED BOTULINUM TOXIN TYPE A - IPSEN |\n| 11 | BLINDED BOTULINUM TOXIN TYPE A \u2013 NON\u2013HSA |\n| 12 | BOLUTLINUM TOXIN TYPE A (BOTULINUM TOXIN TYPE A) |\n| 13 | BOTILINUM TOXIN (BOTULINUM TOXIN TYPE A) |\n| 14 | BOTOULINUM TOXIN TYPE A NOS |\n| 15 | BOTOX (BOTULINUM TOXIN TYPE A) |\n| 16 | BOTOX (BOTULINUM TOXIN TYPE A) (INJECTION) |\n| 17 | BOTOX (BOTULINUM TOXIN TYPE A) INJECTION |\n| 18 | BOTOX (BOTULINUM TOXIN TYPE A) POWDER FOR INJECTION |\n| 19 | BOTOX (BOTULINUM TOXIN) |\n| 20 | BOTOX ALLERGAN BOTULINUM TOXIN TYPE-A |\n| 21 | BOTOX INJECTION (BOTULINUM TOXIN TYPE A) |\n| 22 | BOTOX INJECTION 100 (BOTULINUM TOXIN TYPE A) |\n| 23 | BOTOX INJECTIONS (BOTULINUM TOXIN TYPE A) |\n| 24 | BOTOX [BOTULINUM TOXIN TYPE A] |\n| 25 | BOTOX(BOTULINUM TOXIN TYPE A) |\n| 26 | BOTULINIC TOXIN [BOTULINUM TOXIN TYPE A] |\n| 27 | BOTULINIUM (BOTULINUM TOXIN TYPE A) |\n| 28 | BOTULINIUM TOXIN TYPE B |\n| 29 | BOTULINUM TOXIN |\n| 30 | BOTULINUM TOXIN (BOTULINUM TOXIN TYPE A) |\n| 31 | BOTULINUM TOXIN 100 UNITS |\n| 32 | BOTULINUM TOXIN A |\n| 33 | BOTULINUM TOXIN A (BOTULINUM TOXIN TYPE A) |\n| 34 | BOTULINUM TOXIN A - ALLERGAN CO. |\n| 35 | BOTULINUM TOXIN A 100U |\n| 36 | BOTULINUM TOXIN A INJECTION |\n| 37 | BOTULINUM TOXIN A Q3MONTHS |\n| 38 | BOTULINUM TOXIN INJECTIONS |\n| 39 | BOTULINUM TOXIN NOS |\n| 40 | BOTULINUM TOXIN TYPE A |\n| 41 | BOTULINUM TOXIN TYPE A (BOTOX) |\n\n> **Note:** The dataset shows a total of **107 unique name variants** for botulinum toxin. The above represents the available sample. Common patterns include misspellings (e.g., *BOTILINUM*, *BOLUTLINUM*),",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq06",
+    "question": "What names have been used to report Botox in adverse event records?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the `dim_drug_name_variants` table, here are the reported name variants for **Botulinum Toxin (Botox)** found in adverse event records (107 total variants). The sample includes:\n\n### Brand Name Variants\n| Reported Name |\n|---|\n| BOTOX |\n| BOTOX (BOTULINUM TOXIN TYPE A) |\n| BOTOX INJECTION (BOTULINUM TOXIN TYPE A) |\n| BOTOX INJECTIONS (BOTULINUM TOXIN TYPE A) |\n| BOTOX [BOTULINUM TOXIN TYPE A ((BACTERIA/CLOSTRIDIUM BOTULINUM))] |\n| BOTOX ALLERGAN BOTULINUM TOXIN TYPE-A (NEUROTOXIN) ALLERGAN |\n\n### Generic Name Variants\n| Reported Name |\n|---|\n| BOTULINUM TOXIN |\n| BOTULINUM TOXIN TYPE A |\n| BOTULINUM TOXIN A |\n| BOTULINUM TOXIN A INJECTION |\n| BOTULINUM TOXIN TYPE A (BOTOX) |\n| BOTULINUM TOXIN 100 UNITS |\n| BOTULINUM TOXIN NOS |\n\n### Other Brand Names (non-Botox)\n| Reported Name |\n|---|\n| AZZALURE (BOTULINUM TOXIN TYPE A) |\n| ANTIPAR (BOTULINUM TOXIN TYPE A) |\n\n### Blinded/Clinical Trial Variants\n| Reported Name |\n|---|\n| BLINDED BOTULINUM TOXIN TYPE A - COSMETIC |\n| BLINDED BOTULINUM TOXIN TYPE A - GENERAL |\n| BLINDED BOTULINUM TOXIN TYPE A - IPSEN |\n\n### Misspellings / Typographic Variants\n| Reported Name |\n|---|\n| BOTILINUM TOXIN (BOTULINUM TOXIN TYPE A) |\n| BOLUTLINUM TOXIN TYPE A (BOTULINUM TOXIN TYPE A) |\n| BOTULINIUM (BOTULINUM TOXIN TYPE A) |\n| BOTULINIC TOXIN [BOTULINUM TOXIN TYPE A] |\n| BOTOULINUM TOXIN TYPE A NOS |\n\n---\n\n**Key takeaways:**\n- All 107 variants resolve to the canonical drug ID **`botulinum toxin`**\n- The most common aliases are **BOTOX** (brand) and **BOTULINUM TOXIN TYPE A** (generic)\n- Variants include misspellings, blinded clinical trial labels, co-medication strings, and international brand names like **AZZALURE**\n- These were captured via the `reported_names_inclusion_filter` rule: names containing \"botulinum toxin\" **OR** the brand name \"botox\"",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq07",
+    "question": "Why might a drug like ENBREL appear in semaglutide adverse event reports but not in the name variants table?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Why ENBREL Might Appear in Semaglutide Adverse Event Reports But Not in the Name Variants Table\n\nThis is a great data quality and schema design question. Here are the most likely explanations:\n\n---\n\n### 1. **ENBREL is a Co-Reported (Concomitant) Drug, Not the Primary Drug**\nThe most common reason: adverse event reports typically list **all drugs a patient was taking**, not just the suspected causative agent. ENBREL (etanercept) could appear in a semaglutide report as a:\n- **Concomitant medication**\n- **Interacting drug**\n- **Background therapy**\n\nThe `dim_drug_name_variants` table appears to track **drugs as the subject of reports**, not every drug *mentioned within* those reports.\n\n---\n\n### 2. **Schema Design Scope**\nThe name variants table only maps **reported names \u2192 canonical drugs** for the **five drugs tracked in this dataset**. ENBREL belongs to a completely different drug class and was never intended to be canonicalized here.\n\n---\n\n### 3. **Practical Implication**\n| Context | ENBREL's Role |\n|---|---|\n| Adverse event report | Listed as co-medication |\n| `dim_drug_name_variants` | Out of scope \u2014 not a canonical drug being tracked |\n\n---\n\n### Key Takeaway\nAbsence from the name variants table **does not mean ENBREL is absent from the underlying reports** \u2014 it simply means it's not being tracked as a *primary drug of interest* in this dataset's canonical drug list.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq07",
+    "question": "Why might a drug like ENBREL appear in semaglutide adverse event reports but not in the name variants table?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Why ENBREL Might Appear in Adverse Event Reports But Not in Name Variants\n\nThis is a really important data quality and modeling question. Here are the key reasons:\n\n---\n\n### 1. **Co-Suspect / Concomitant Drug Reporting**\nThe most likely explanation. Adverse event reports (like FDA FAERS) capture **all drugs a patient was taking**, not just the suspected cause. ENBREL could appear as:\n- A **concomitant medication** (taken alongside semaglutide)\n- A **co-suspect drug** in the same report\n- An **interacting drug** mentioned in the narrative\n\n> The report is *associated with* semaglutide, but ENBREL is just another drug listed in that report.\n\n---\n\n### 2. **Name Variants Table Has a Different Scope**\nThe `dim_drug_name_variants` table only contains **reported name variants for the 5 canonical drugs** being tracked in this dataset:\n- acetaminophen, aspirin, amphetamine, botulinum toxin, semaglutide\n\nENBREL is **not one of the canonical drugs**, so it would never be added as a name variant \u2014 even if it appears frequently in the underlying reports.\n\n---\n\n### 3. **Pipeline Design Decision**\nThe source pipeline likely:\n```\nAdverse Event Reports  \u2192  filtered/joined on semaglutide variants\n                       \u2192  keeps ALL drugs mentioned in matching reports\n                       \u2192  but only maps name variants for tracked drugs\n```\n\n---\n\n### Key Distinction\n\n| Concept | Explanation |\n|---|---|\n| **Name Variants** | Only for drugs *being studied* (canonical drugs) |\n| **Adverse Event Reports** | Capture the *full drug context* of each patient case |\n\n---\n\n### Practical Implication\nIf you're analyzing semaglutide safety, seeing ENBREL frequently could signal a **real-world patient population** (e.g., diabetic patients also managing autoimmune conditions), which is clinically meaningful \u2014 but ENBREL's presence is about **report-level context**, not drug identity matching.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq07",
+    "question": "Why might a drug like ENBREL appear in semaglutide adverse event reports but not in the name variants table?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Why ENBREL Appears in Semaglutide Reports But Not in Name Variants\n\nThis is a direct consequence of the **`reported_names_inclusion_filter`** rule documented in the ontology.\n\n---\n\n### The core reason: co-medications in multi-drug reports\n\nA single adverse event report can list **multiple suspect drugs**. A patient taking both semaglutide and ENBREL (etanercept) who experiences an adverse event might have both drugs listed in the same report. When semaglutide is the query term (`_drug_query = 'semaglutide'`), that report is pulled into the semaglutide dataset \u2014 **but ENBREL is just a co-medication on that report, not semaglutide itself**.\n\n---\n\n### Why the filter excludes ENBREL\n\nThe inclusion filter requires that a reported drug name pass **at least one** of these two conditions:\n\n```sql\nWHERE LOWER(medicinalproduct) LIKE '%semaglutide%'\n   OR LOWER(medicinalproduct) IN ('ozempic', 'wegovy', 'rybelsus', ...)\n```\n\nENBREL fails both:\n- It does **not** contain the string `\"semaglutide\"`\n- It is **not** in the brand-name allowlist (which only includes brands that resolve to one of the 5 canonical drugs)\n\nSo ENBREL is excluded from `dim_drug_name_variants` \u2014 correctly \u2014 because it is **not a name variant for semaglutide**. It is an unrelated drug that happened to appear on the same report.\n\n---\n\n### Why this matters\n\nWithout this filter, `dim_drug_name_variants` would be polluted with co-medication names, and a name-resolution lookup like:\n\n> *\"What canonical drug does ENBREL resolve to?\"*\n\n...could incorrectly return `semaglutide`, which would be wrong. ENBREL belongs to a completely different drug (etanercept), which isn't even one of the 5 canonical drugs in this dataset.\n\n---\n\n### Summary\n\n| Dimension | Detail |\n|---|---|\n| **Why it appears in reports** | Multi-drug adverse event reports include all suspect co-medications; semaglutide's event pull captures any report where semaglutide was one of the drugs |\n| **Why it's excluded from name variants** | It fails the inclusion filter \u2014 doesn't contain `\"semaglutide\"` and isn't a known brand name for any of the 5 canonical drugs |\n| **What the filter protects** | The integrity of name-resolution lookups \u2014 only true name variants of the canonical drug are stored, not coincidental co-medications |",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq08",
+    "question": "Which field in this dataset determines whether a drug's warnings come from warnings_and_cautions vs warnings?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the dataset schema provided, there is **no such field** that distinguishes between \"warnings_and_cautions\" vs \"warnings\" as a source.\n\nThe dataset only has a **single `warnings` column** in the `dim_drug` table, which appears to consolidate warning information (the sample text shows content labeled **\"5 WARNINGS AND PRECAUTIONS\"** from FDA drug labeling).\n\nThere is no metadata field indicating:\n- Which section of the label the warning text was pulled from\n- Whether it came from a \"Warnings and Precautions\" section vs. a \"Warnings\" section\n- Any source/type tagging for the warnings content\n\nIf you need to differentiate between warning types, you would have to do so by **parsing the text content** of the `warnings` field itself (e.g., looking for section headers within the text).",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq08",
+    "question": "Which field in this dataset determines whether a drug's warnings come from warnings_and_cautions vs warnings?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Short Answer\n\nThere is **no explicit field** in this dataset that distinguishes *which source section* a warning came from. The `warnings` column in `dim_drug` is a single free-text field that appears to consolidate warning text \u2014 the sample data shows it sourced from **\"5 WARNINGS AND PRECAUTIONS\"** (the structured FDA label section header is visible in the raw text).\n\n## What the Data Shows\n\nLooking at the `warnings` column content in `dim_drug`, for example:\n\n- **Acetaminophen**: *\"5 WARNINGS AND PRECAUTIONS 5.1 Hepatic Injury...\"*\n- **Semaglutide**: *\"5 WARNINGS AND PRECAUTIONS \u2022 Acute Pancreatitis...\"*\n- **Amphetamine**: *\"5 WARNINGS AND PRECAUTIONS . Risks to Patients...\"*\n\nAll sampled drugs point to **Section 5 (Warnings and Precautions)** from the FDA label format.\n\n## Implication\n\nIf you need to differentiate between subsections (e.g., **Boxed Warnings** vs. **Warnings and Precautions** vs. **General Warnings**), that distinction would need to be:\n1. **Parsed from the free text** within the `warnings` field itself\n2. Or sourced from an **upstream pipeline** (`source_pipeline` column) that may have captured that granularity\n\nThe schema does not include a dedicated field for warning source classification.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq08",
+    "question": "Which field in this dataset determines whether a drug's warnings come from warnings_and_cautions vs warnings?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the ontology documentation, the field that determines which source is used is whether the field itself **is non-null** \u2014 specifically, the transformation applies a **COALESCE** logic:\n\n```sql\nCOALESCE(warnings_and_cautions, warnings)\n```\n\nThe ontology states explicitly:\n\n> *\"The transformation branches on which field is non-null \u2014 not on drug identity.\"*\n\n### In practice, this maps as follows:\n\n| Drug type | Source field | Example drugs |\n|---|---|---|\n| **Rx drugs** | `drug_labels__warnings_and_cautions` | semaglutide, amphetamine, botulinum toxin |\n| **OTC drugs** | `drug_labels__warnings` | acetaminophen, acetylsalicylic acid |\n\n### Key nuance:\nThe branching is **data-driven**, not hardcoded by drug name. If a drug's label populates `warnings_and_cautions`, that value is used. If that field is null, it falls back to `warnings`. The Rx vs. OTC pattern is an *observed consequence* of how FDA structures labels, not an explicit rule in the transformation logic.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq09",
+    "question": "Which drugs have label warnings in this dataset, and which do not?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "Based on the `warnings` column in the **dim_drug** table, **all five drugs** in this dataset have label warnings. Here's a summary:\n\n---\n\n### \u2705 Drugs WITH Label Warnings (All 5)\n\n| Drug | Warning Highlights |\n|---|---|\n| **Acetaminophen** | Hepatic injury risk, liver failure and death with high doses |\n| **Acetylsalicylic Acid (Aspirin)** | Increased bleeding risk, avoid in severe hepatic/renal insufficiency |\n| **Amphetamine** | Risks in serious cardiac disease, increased blood pressure and heart rate |\n| **Botulinum Toxin** | Potency units not interchangeable across products, spread of toxin effects can cause death |\n| **Semaglutide** | Acute pancreatitis risk, diabetic retinopathy complications |\n\n---\n\n### \u274c Drugs WITHOUT Label Warnings\n**None** \u2014 every drug in this dataset has documented warnings.\n\n---\n\nIt's worth noting that the presence of warnings is expected, as all approved drugs carry some level of safety labeling required by regulatory agencies like the FDA.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq09",
+    "question": "Which drugs have label warnings in this dataset, and which do not?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Drug Label Warnings Analysis\n\nBased on the `warnings` column in `dim_drug`, **all 5 drugs in the dataset have label warnings**. Here's a summary:\n\n---\n\n### \u2705 Drugs WITH Label Warnings\n\n| Drug | Key Warning Themes |\n|---|---|\n| **Acetaminophen** | Hepatic injury/liver failure risk with high doses; maximum daily dose limits |\n| **Aspirin (Acetylsalicylic Acid)** | Increased bleeding risk; avoid in severe hepatic/renal insufficiency; interaction with IV dipyridamole |\n| **Amphetamine** | Risks in serious cardiac disease; increased blood pressure and heart rate |\n| **Botulinum Toxin** | Potency units not interchangeable across products; toxin spread can cause swallowing/breathing difficulties and death |\n| **Semaglutide** | Acute pancreatitis risk; diabetic retinopathy complications |\n\n---\n\n### \u274c Drugs WITHOUT Label Warnings\n*None \u2014 every drug in this dataset has at least one documented warning.*\n\n---\n\n### Notable Observations\n- **Botulinum Toxin** carries the most acute safety risk language, including potential **death** from toxin spread\n- **Acetaminophen** warnings focus on **dose-dependent organ damage**\n- **Semaglutide and Amphetamine** warnings flag **cardiovascular and metabolic risks**",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq09",
+    "question": "Which drugs have label warnings in this dataset, and which do not?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Drug Label Warnings in the Dataset\n\nAll 5 drugs in this dataset have label warnings populated. However, the warnings come from **two different source fields**, depending on whether the drug is Rx or OTC:\n\n---\n\n### Rx Drugs \u2014 warnings from `warnings_and_cautions`\n\n| Drug | Key Warning Themes |\n|---|---|\n| **Semaglutide** | Acute pancreatitis, diabetic retinopathy complications |\n| **Amphetamine** | Serious cardiac risks, increased blood pressure/heart rate |\n| **Botulinum Toxin** | Toxin spread (swallowing/breathing difficulties, death risk); potency units not interchangeable across products |\n\n---\n\n### OTC Drugs \u2014 warnings from `warnings`\n\n| Drug | Key Warning Themes |\n|---|---|\n| **Acetaminophen** | Hepatic injury, liver failure risk from exceeding maximum daily dose |\n| **Acetylsalicylic Acid (Aspirin)** | Bleeding risk, avoid in severe hepatic/renal insufficiency, interrupt use 48 hrs before IV dipyridamole |\n\n---\n\n## Important Modeling Note\n\nThe field used is determined by **which source field is non-null**, not by drug identity:\n\n```sql\nCOALESCE(warnings_and_cautions, warnings)\n```\n\nRx drugs populate `warnings_and_cautions`; OTC drugs populate `warnings`. This is a pipeline branching decision documented in the ontology \u2014 both fields land in the same `warnings` attribute in `dim_drug`.\n\n---\n\n**Bottom line:** No drug in this dataset is missing warnings data. All 5 have warnings, sourced from the appropriate FDA label field for their drug class.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq10",
+    "question": "The approved_indications for acetaminophen describe an IV injection product. Why?",
+    "condition": "a",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Why Acetaminophen's `approved_indications` Describes an IV Injection Product\n\nThe `approved_indications` text in this dataset appears to have been pulled from the **FDA label for Acetaminophen Injection (IV formulation)** \u2014 specifically, this corresponds to the prescribing information for **Ofirmev** (or its generic equivalents), which is an **intravenous acetaminophen product** used in clinical/hospital settings.\n\nThis likely happened because:\n\n1. **Label sourcing methodology**: The dataset appears to pull FDA structured product labeling (SPL) data, and when multiple formulations/labels exist for a drug, **one label is selected as representative** \u2014 in this case, the IV formulation's label was chosen rather than the more commonly recognized OTC oral tablet label.\n\n2. **Alphabetical or arbitrary selection**: If multiple NDC/label entries exist for acetaminophen, the pipeline may have picked the IV label due to how records were ranked, sorted, or deduplicated.\n\n3. **Mismatch with real-world use**: This is worth noting as a **data quality caveat** \u2014 the vast majority of acetaminophen adverse events in the dataset almost certainly involve **oral OTC formulations** (Tylenol, etc.), making the IV label a poor representative description of how the drug is actually being used in reported cases.\n\nIn short, it's a **data pipeline artifact**, not an error in the underlying FDA labeling itself.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq10",
+    "question": "The approved_indications for acetaminophen describe an IV injection product. Why?",
+    "condition": "b",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Why the Acetaminophen Approved Indications Describe an IV Product\n\nThe `approved_indications` text in the dataset comes from the **FDA label for Acetaminophen Injection** (the IV/intravenous formulation), specifically the product known as **Ofirmev** (or its generic equivalents).\n\nThis happens because of **how the data was sourced**. Looking at the `_drug_query` pipeline, the label text was likely pulled from the **FDA's drug labeling database (DailyMed/openFDA)**, and the specific label retrieved was for the **injectable formulation** rather than the far more common oral tablets/capsules (Tylenol, etc.).\n\n### Key clues in the text itself:\n- *\"Acetaminophen Injection is indicated for...\"* \u2014 explicitly names the injection form\n- *\"management of moderate to severe pain with adjunctive opioid analgesics\"* \u2014 a typical **hospital/surgical** use case for IV acetaminophen\n- *\"pediatric patients 2 years and older\"* \u2014 consistent with IV labeling language\n\n### The practical implication:\nThe **adverse event reports** in this dataset (all 25,000 of them) are overwhelmingly from **oral acetaminophen** use (Tylenol, APAP, Paracetamol \u2014 as seen in the name variants), but the `approved_indications` field only reflects **one specific product label**, creating a mismatch.\n\nThis is a known limitation of mapping a single canonical drug label to a drug that has **hundreds of formulations and products**.",
+    "score": null
+  },
+  {
+    "experiment": "openfda",
+    "question_id": "fq10",
+    "question": "The approved_indications for acetaminophen describe an IV injection product. Why?",
+    "condition": "c",
+    "model": "claude-sonnet-4-6",
+    "run_at": "2026-05-26T15:13:08.796748+00:00",
+    "response": "## Why Acetaminophen's Approved Indications Describe an IV Product\n\nThis is a documented semantic gap in the ontology. Here's what's happening:\n\n### The Root Cause: OpenFDA Returns All Label Records\n\nWhen the pipeline queries OpenFDA's Drug Labels API using `_drug_query = \"acetaminophen\"`, OpenFDA returns **all label records** indexed under that generic name \u2014 not just the consumer OTC Tylenol label. This includes Rx formulations of the same active ingredient.\n\nThe `approved_indications` field is populated from the **first** label record returned (`first distinct value per _drug_query`). That first record happens to be an **IV injection label** \u2014 specifically a product like **Caldolor or Ofirmev** \u2014 which is an intravenous acetaminophen formulation used in clinical settings.\n\n### What the Indications Actually Describe\n\nThe IV label indications are clinically accurate for *that product*:\n- Management of mild to moderate pain in adults and pediatric patients \u22652 years\n- Management of moderate to severe pain as an adjunct to opioid analgesics\n- Reduction of fever\n\nThese are **not** the consumer OTC indications you'd find on a Tylenol bottle, even though the active ingredient is identical.\n\n### The Known Failure Mode\n\nThe ontology explicitly flags this as a benchmark risk: **an LLM without this context will report those Rx IV indications as if they apply to consumer Tylenol** \u2014 a meaningful clinical misrepresentation.\n\n### Summary\n\n| What you'd expect | What the data contains |\n|---|---|\n| OTC Tylenol label (tablets, pain/fever relief) | Rx IV acetaminophen label (Caldolor/Ofirmev) |\n| Consumer dosing context | Clinical/hospital dosing context |\n\nThe data is not wrong \u2014 it is just the artifact of OpenFDA's label indexing behavior combined with a \"first record wins\" transformation logic.",
+    "score": null
+  }
+]
