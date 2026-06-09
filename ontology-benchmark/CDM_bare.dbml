@@ -1,0 +1,45 @@
+// CDM: account_churn_risk
+// Grain: fact_activity — one row per usage event (login or API call) per seat
+
+Table dim_account {
+  account_sk     bigint    [pk]
+  source_id      varchar   [not null]
+  source_pipeline varchar  [not null]
+  company        varchar
+  plan           varchar
+  status         varchar
+  created_at     timestamp
+  reactivated_at timestamp
+  account_type   varchar
+  valid_from     timestamp [not null]
+  valid_to       timestamp
+  is_current     boolean   [not null]
+}
+
+Table dim_seat {
+  seat_sk        bigint    [pk]
+  source_id      varchar   [not null]
+  source_pipeline varchar  [not null]
+  account_sk     bigint    [not null, ref: > dim_account.account_sk]
+  user           varchar
+  plan_type      varchar
+  role           varchar
+  created_at     timestamp
+  is_at_risk     boolean
+  valid_from     timestamp [not null]
+  valid_to       timestamp
+  is_current     boolean   [not null]
+}
+
+Table fact_activity {
+  activity_sk               bigint    [pk]
+  seat_sk                   bigint    [not null, ref: > dim_seat.seat_sk]
+  account_sk                bigint    [not null, ref: > dim_account.account_sk]
+  event_id                  varchar   [not null]
+  activity_type             varchar   [not null]
+  occurred_at               timestamp [not null]
+  session_duration_seconds  bigint
+  endpoint                  varchar
+  status_code               integer
+  is_valid_login            boolean   [not null]
+}
