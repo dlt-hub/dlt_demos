@@ -1,0 +1,70 @@
+{
+  "_version": "1.0",
+  "_name": "retail_sales",
+  "Customer": {
+    "description": "An individual who places orders",
+    "use_cases": ["customer purchase behavior"],
+    "references": ["customer"],
+    "tables": [
+      {"table": "customers", "source_pipeline": "sample_shop_pipeline", "role": "primary"}
+    ],
+    "natural_key": null,
+    "assumptions": ["single source - primary key 'id' is the identifier"]
+  },
+  "Order": {
+    "description": "A purchase transaction with subtotal, tax, total, timestamp, placed by a customer at a store",
+    "use_cases": ["order & revenue analytics", "customer purchase behavior", "store operations"],
+    "references": ["order"],
+    "tables": [
+      {"table": "orders", "source_pipeline": "sample_shop_pipeline", "role": "primary"}
+    ],
+    "natural_key": null,
+    "assumptions": []
+  },
+  "OrderItem": {
+    "description": "A line item linking an order to a product SKU",
+    "use_cases": ["order & revenue analytics", "product performance"],
+    "references": ["item", "line item"],
+    "tables": [
+      {"table": "items", "source_pipeline": "sample_shop_pipeline", "role": "primary"}
+    ],
+    "natural_key": null,
+    "assumptions": ["top-level 'items' resource chosen over nested 'orders__items' (identical columns)"]
+  },
+  "Product": {
+    "description": "A sellable item with sku, type, price, description",
+    "use_cases": ["product performance"],
+    "references": ["product"],
+    "tables": [
+      {"table": "products", "source_pipeline": "sample_shop_pipeline", "role": "primary"}
+    ],
+    "natural_key": null,
+    "assumptions": ["primary key is 'sku', not 'id'"]
+  },
+  "Supply": {
+    "description": "An ingredient/supply with cost and perishable flag, linked to a product via sku",
+    "use_cases": ["product performance"],
+    "references": ["supply", "ingredient"],
+    "tables": [
+      {"table": "supplies", "source_pipeline": "sample_shop_pipeline", "role": "primary"}
+    ],
+    "natural_key": null,
+    "assumptions": ["supplies.sku references products.sku; one product can have many supplies"]
+  },
+  "Store": {
+    "description": "A physical location with name, opening date, and tax rate",
+    "use_cases": ["store operations", "order & revenue analytics"],
+    "references": ["store", "location"],
+    "tables": [
+      {"table": "stores", "source_pipeline": "sample_shop_pipeline", "role": "primary"}
+    ],
+    "natural_key": null,
+    "assumptions": []
+  },
+  "_excluded": [
+    {"table": "orders__items", "reason": "duplicate of top-level 'items' resource (identical columns id, order_id, sku) - user confirmed exclusion"},
+    {"table": "_dlt_version", "reason": "dlt internal schema versioning table"},
+    {"table": "_dlt_loads", "reason": "dlt internal load tracking table"},
+    {"table": "_dlt_pipeline_state", "reason": "dlt internal pipeline state table"}
+  ]
+}

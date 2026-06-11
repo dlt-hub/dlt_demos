@@ -1,0 +1,57 @@
+nodes.Entity
+id	label	inferred	assumption
+Customer	Customer	false	Single source: sample_shop_pipeline.customers. PK id.
+Order	Order	false	Single source: sample_shop_pipeline.orders. PK id.
+OrderItem	OrderItem	false	Single source: sample_shop_pipeline.items. Nested duplicate orders__items excluded. No quantity column - one row per unit. No price column - unit price comes from Product via sku.
+Product	Product	false	Single source: sample_shop_pipeline.products. PK is sku, not id.
+Supply	Supply	false	Single source: sample_shop_pipeline.supplies. One product can have many supplies.
+Store	Store	false	Single source: sample_shop_pipeline.stores. PK id.
+
+nodes.Attribute
+entity	name	type	master_source	also_in	note
+:Entity:Customer	id	text	customers		primary_key
+:Entity:Customer	name	text	customers
+:Entity:Order	id	text	orders		primary_key
+:Entity:Order	customer_id	text	orders		fk -> customers.id
+:Entity:Order	store_id	text	orders		fk -> stores.id
+:Entity:Order	ordered_at	timestamp	orders
+:Entity:Order	subtotal	double	orders
+:Entity:Order	tax_paid	double	orders
+:Entity:Order	order_total	double	orders
+:Entity:OrderItem	id	text	items		primary_key
+:Entity:OrderItem	order_id	text	items		fk -> orders.id
+:Entity:OrderItem	sku	text	items		fk -> products.sku
+:Entity:Product	sku	text	products		primary_key
+:Entity:Product	name	text	products
+:Entity:Product	type	text	products
+:Entity:Product	price	double	products
+:Entity:Product	description	text	products
+:Entity:Supply	id	text	supplies		primary_key
+:Entity:Supply	name	text	supplies
+:Entity:Supply	cost	double	supplies
+:Entity:Supply	perishable	bool	supplies
+:Entity:Supply	sku	text	supplies		fk -> products.sku
+:Entity:Store	id	text	stores		primary_key
+:Entity:Store	name	text	stores
+:Entity:Store	opened_at	timestamp	stores
+:Entity:Store	tax_rate	double	stores
+
+edges.PLACED_BY
+from	to	via	inferred
+:Entity:Order	:Entity:Customer	orders.customer_id	false
+
+edges.PLACED_AT
+from	to	via	inferred
+:Entity:Order	:Entity:Store	orders.store_id	false
+
+edges.PART_OF
+from	to	via	inferred
+:Entity:OrderItem	:Entity:Order	items.order_id	false
+
+edges.FOR_PRODUCT
+from	to	via	inferred
+:Entity:OrderItem	:Entity:Product	items.sku	false
+
+edges.SUPPLY_FOR
+from	to	via	inferred
+:Entity:Supply	:Entity:Product	supplies.sku	false

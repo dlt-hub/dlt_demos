@@ -1,0 +1,92 @@
+Table "_dlt_version" [note: 'excluded: dlt internal table'] {
+    "version" bigint [not null]
+    "engine_version" bigint [not null]
+    "inserted_at" timestamp [not null]
+    "schema_name" text [not null]
+    "version_hash" text [not null]
+    "schema" text [not null]
+}
+
+Table "_dlt_loads" [note: 'excluded: dlt internal table'] {
+    "load_id" text [not null]
+    "schema_name" text
+    "status" bigint [not null]
+    "inserted_at" timestamp [not null]
+    "schema_version_hash" text
+}
+
+Table "customers" [note: 'concept: Customer | role: primary'] {
+    "id" text [pk, not null]
+    "name" text
+    "_dlt_load_id" text [not null]
+    "_dlt_id" text [not null]
+}
+
+Table "orders" [note: 'concept: Order | role: primary'] {
+    "id" text [pk, not null]
+    "customer_id" text
+    "store_id" text
+    "ordered_at" timestamp
+    "subtotal" double
+    "tax_paid" double
+    "order_total" double
+    "_dlt_load_id" text [not null]
+    "_dlt_id" text [not null]
+}
+
+Table "items" [note: 'concept: OrderItem | role: primary'] {
+    "id" text [pk, not null]
+    "order_id" text
+    "sku" text
+    "_dlt_load_id" text [not null]
+    "_dlt_id" text [not null]
+}
+
+Table "products" [note: 'concept: Product | role: primary'] {
+    "sku" text [pk, not null]
+    "name" text
+    "type" text
+    "price" double
+    "description" text
+    "_dlt_load_id" text [not null]
+    "_dlt_id" text [not null]
+}
+
+Table "supplies" [note: 'concept: Supply | role: primary'] {
+    "id" text [pk, not null]
+    "name" text
+    "cost" double
+    "perishable" bool
+    "sku" text
+    "_dlt_load_id" text [not null]
+    "_dlt_id" text [not null]
+}
+
+Table "stores" [note: 'concept: Store | role: primary'] {
+    "id" text [pk, not null]
+    "name" text
+    "opened_at" timestamp
+    "tax_rate" double
+    "_dlt_load_id" text [not null]
+    "_dlt_id" text [not null]
+}
+
+Table "_dlt_pipeline_state" [note: 'excluded: dlt internal table'] {
+    "version" bigint [not null]
+    "engine_version" bigint [not null]
+    "pipeline_name" text [not null]
+    "state" text [not null]
+    "created_at" timestamp [not null]
+    "version_hash" text
+    "_dlt_load_id" text [not null]
+    "_dlt_id" text [not null]
+}
+
+Table "orders__items" [note: 'excluded: duplicate of top-level items resource'] {
+    "id" text
+    "order_id" text
+    "sku" text
+    "_dlt_parent_id" text [not null]
+    "_dlt_list_idx" bigint [not null]
+    "_dlt_id" text [not null]
+}
