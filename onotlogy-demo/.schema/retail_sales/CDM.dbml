@@ -1,0 +1,62 @@
+// CDM: retail_sales
+// Source: sample_shop_pipeline (Jaffle Shop API, duckdb)
+// Kimball star schema — two facts, four conformed Type-1 dimensions.
+// Sentinel rows: conformed dimensions carry an UNKNOWN row (sk = 'unknown') so fact FKs are never NULL.
+
+Table dim_customer [note: 'table_type:dimension; surrogate_key:customer_sk; scd_type:1; conformed:true'] {
+  customer_sk varchar [pk, note: 'surrogate key (md5 hash of source_id)']
+  source_id varchar [note: 'source key — customers.id, stored for lineage']
+  source_pipeline varchar [note: 'sample_shop_pipeline']
+  name varchar
+}
+
+Table dim_product [note: 'table_type:dimension; surrogate_key:product_sk; scd_type:1; conformed:true'] {
+  product_sk varchar [pk, note: 'surrogate key (md5 hash of source_id)']
+  source_id varchar [note: 'source key — products.sku, stored for lineage']
+  source_pipeline varchar [note: 'sample_shop_pipeline']
+  name varchar
+  type varchar [note: 'product category, e.g. jaffle / beverage']
+  price double [note: 'current unit price (Type 1 — overwritten on change)']
+  description varchar
+}
+
+Table dim_store [note: 'table_type:dimension; surrogate_key:store_sk; scd_type:1; conformed:true'] {
+  store_sk varchar [pk, note: 'surrogate key (md5 hash of source_id)']
+  source_id varchar [note: 'source key — stores.id, stored for lineage']
+  source_pipeline varchar [note: 'sample_shop_pipeline']
+  name varchar
+  opened_at timestamp
+  tax_rate double
+}
+
+Table dim_supply [note: 'table_type:dimension; surrogate_key:supply_sk; scd_type:1; conformed:false'] {
+  supply_sk varchar [pk, note: 'surrogate key (md5 hash of source_id + product sku — source id repeats per sku)']
+  source_id varchar [note: 'source key — supplies.id, stored for lineage']
+  source_pipeline varchar [note: 'sample_shop_pipeline']
+  name varchar
+  cost double [note: 'supply cost contributing to product cost']
+  perishable bool
+  product_sk varchar [ref: > dim_product.product_sk, note: 'product this supply is used in (via supplies.sku)']
+}
+
+Table fact_orders [note: 'table_type:fact; grain:one row per order'] {
+  order_sk varchar [pk, note: 'surrogate key (md5 hash of order_id)']
+  order_id varchar [note: 'degenerate dimension — natural transaction key, joins to fact_order_items.order_id']
+  customer_sk varchar [ref: > dim_customer.customer_sk, note: 'UNKNOWN sentinel when customer_id is missing']
+  store_sk varchar [ref: > dim_store.store_sk, note: 'UNKNOWN sentinel when store_id is missing']
+  ordered_at timestamp
+  subtotal double [note: 'additive measure']
+  tax_paid double [note: 'additive measure']
+  order_total double [note: 'additive measure']
+}
+
+Table fact_order_items [note: 'table_type:fact; grain:one row per item per order'] {
+  order_item_sk varchar [pk, note: 'surrogate key (md5 hash of item id)']
+  order_id varchar [note: 'degenerate dimension — joins to fact_orders.order_id']
+  item_id varchar [note: 'degenerate dimension — natural line key (items.id)']
+  customer_sk varchar [ref: > dim_customer.customer_sk, note: 'inherited from order header']
+  store_sk varchar [ref: > dim_store.store_sk, note: 'inherited from order header']
+  product_sk varchar [ref: > dim_product.product_sk]
+  ordered_at timestamp [note: 'inherited from order header for date filtering at line grain']
+  unit_price double [note: 'additive measure — products.price joined via sku at load time; source has no line-level price']
+}

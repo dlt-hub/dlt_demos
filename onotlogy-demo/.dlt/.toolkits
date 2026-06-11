@@ -1,0 +1,59 @@
+init:
+  version: 0.1.1
+  description: Shared rules, secrets handling, and workspace MCP for dlthub
+  tags:
+  - dlthub
+  - init
+  - rules
+  - secrets
+  - mcp
+  installed_at: '2026-06-11T16:33:56.439033+00:00'
+  agent: claude
+  files:
+    .claude/skills/improve-skills/SKILL.md:
+      sha3_256: c52b222d82d101eaacbbf19d271d3f24b20d8e2bc70d49919d56144d448cd5c4
+    .claude/skills/setup-secrets/SKILL.md:
+      sha3_256: 83fb6e1af003c065ce3bb26042f0e2de24a22df14353db23ad4f6192d90e7785
+    .claude/skills/setup-secrets/cli-reference.md:
+      sha3_256: b3aed4466ecb84770e11176b5b07b109093c72808c44b73d02c5cd789af86c97
+    .claude/skills/toolkit-dispatch/SKILL.md:
+      sha3_256: de66960f9e0f46a11adbb6c203dafdd61d94f4768e2c36465efb66f7f7573577
+    .claudeignore:
+      sha3_256: 1aa4dc9286dd219dcb55399f388c5ee1f940ab5e399a42b644d488cba57a9ec0
+    .claude/rules/init-dlthub-workspace.md:
+      sha3_256: 64ae0d072a1c8f48d702fffc5cbd0fb4f9b6a98b24cb4380874ad9013a21cb78
+  mcp_servers:
+  - dlt-workspace-mcp
+  name: init
+transformations:
+  version: 0.1.1
+  description: Transform raw dlt pipeline data into a Canonical Data Model. Build
+    an ontology, design a CDM with Kimball dimensional modeling, write @dlt.hub.transformation
+    functions, and validate the output.
+  tags:
+  - dlthub
+  - transformation
+  - cdm
+  - kimball
+  - ibis
+  - dimensional-modeling
+  dependencies:
+  - init
+  workflow_entry_skill: annotate-sources
+  installed_at: '2026-06-11T16:33:56.448200+00:00'
+  agent: claude
+  files:
+    .claude/skills/annotate-sources/SKILL.md:
+      sha3_256: 98316fda6abfb9b89b1eec865a0d9bcf206ea211fd2610033ca37c839ace2bc9
+    .claude/skills/create-ontology/SKILL.md:
+      sha3_256: 1292232346aa3a31f78652d2b188c83d4f4df77b055d673be8dc4e0eb5c1c541
+    .claude/skills/create-transformation/SKILL.md:
+      sha3_256: 5da61c35968eda4f5b925c277bb21e0a07963217832cd655c6d48f5684c7863a
+    .claude/skills/debug-transformation/SKILL.md:
+      sha3_256: 84ba46e3d976928785951917335fee65c1cfbd7286946688b46dab77e8e3a7d1
+    .claude/skills/generate-cdm/SKILL.md:
+      sha3_256: 009eabff6111ddc95250b7912f3451e069a6e6d0949e13a011cc77657be63b00
+    .claude/skills/incremental-transformation/SKILL.md:
+      sha3_256: 18305abb2edcecb7b872172007b5d10fddd74192ad082d944fec913fd62a17cd
+    .claude/rules/transformations-workflow.md:
+      sha3_256: 8c6a413c33a6110fafc1287be72b35906a8357c9c3e70ee7b44784ebc2950094
