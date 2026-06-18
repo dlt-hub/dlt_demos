@@ -1,0 +1,19 @@
+[runtime]
+log_level = "WARNING"
+dlthub_telemetry = true
+
+[sources.repos_with_stars]
+data_project_id = "githubarchive"
+dataset_id = "month"
+billing_project_id = "dlthub-sandbox"
+min_stars = 300
+start_month_id = "202604"
+end_month_id = "202604"
+
+[destination.filesystem]
+bucket_url = "./out/github-stars"
+
+[destination.lancedb]
+embedding_model_provider = "gemini-text"
+embedding_model = "gemini-embedding-001"
+embedding_model_dimensions = 3072
