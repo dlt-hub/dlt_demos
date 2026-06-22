@@ -1,0 +1,24 @@
+[project]
+name = "dlthub-workspace"
+version = "0.1.0"
+description = "A dlthub workspace"
+requires-python = ">=3.10"
+dependencies = [
+    "dlt[hub,motherduck]==1.27.2",
+    "dlthub>=0.27.0,<1",
+    "dlthub-client>=0.27.7,<1",
+    "duckdb>=0.9",
+    "ibis-framework>=12.0.0 ; python_version >= '3.10'",
+    "pyarrow>=16.0.0",
+    "marimo>=0.14.5",
+    "fastmcp>=3.0.0 ; python_version >= '3.10'",
+    "mowidgets>=0.2.1 ; python_version >= '3.11'",
+    "pathspec>=0.11.2",
+    "pydbml>=1.2.0",
+    "croniter>=6.0.0",
+    "anthropic>=0.109.2",
+    "altair>=6.2.1",
+    "numpy>=2.2.6",
+    "pandas>=2.3.3",
+    "wordcloud>=1.9.6",
+]
